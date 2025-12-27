@@ -116,6 +116,9 @@ For issues, feature requests, or questions, please open an issue on GitHub.
 
 ## Release Notes
 
+### 0.1.5
+- Add a final positional Modbus fallback to keep legacy pymodbus deployments working during setup and polling.
+
 ### 0.1.4
 - Fix config flow connection tests against pymodbus builds that still require the `slave` keyword.
 - Apply the same compatibility fallback to runtime reads and writes so older libraries keep working.

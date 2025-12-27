@@ -1,3 +1,8 @@
+## 0.1.5 - Legacy Modbus Support (2025-12-27)
+
+### Fixed
+- Add positional Modbus read/write fallback so very old pymodbus clients lacking both `unit` and `slave` keywords still work during setup and runtime.
+
 ## 0.1.4 - Modbus Compatibility (2025-12-27)
 
 ### Fixed
