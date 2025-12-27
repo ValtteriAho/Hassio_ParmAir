@@ -1,3 +1,10 @@
+## 0.1.8 - Extended Legacy Compatibility (2025-12-27)
+
+### Fixed
+- Add `device_id` keyword argument as additional fallback layer in Modbus read/write methods, supporting extremely old pymodbus builds (pre-2.0 era).
+- Improve compatibility chain: `unit` → `slave` → `device_id` → attribute assignment → positional arguments.
+- Reference jormai/parmair implementation patterns for legacy client handling.
+
 ## 0.1.7 - Countless Legacy Clients (2025-12-27)
 
 ### Fixed

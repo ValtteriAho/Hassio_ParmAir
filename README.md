@@ -116,6 +116,10 @@ For issues, feature requests, or questions, please open an issue on GitHub.
 
 ## Release Notes
 
+### 0.1.8
+- Add `device_id` keyword argument as additional Modbus fallback for pre-2.0 era pymodbus builds.
+- Enhanced compatibility chain: `unit` → `slave` → `device_id` → attribute assignment → positional.
+
 ### 0.1.7
 - Retry Modbus reads without a count parameter to cover extremely old pymodbus clients.
 - Handle legacy read responses that do not include a `registers` attribute.

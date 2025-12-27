@@ -119,10 +119,15 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         definition.address, raw_value, slave=self.slave_id
                     )
                 except TypeError:
-                    _set_legacy_unit(self._client, self.slave_id)
-                    result = self._client.write_register(
-                        definition.address, raw_value
-                    )
+                    try:
+                        result = self._client.write_register(
+                            definition.address, raw_value, device_id=self.slave_id
+                        )
+                    except TypeError:
+                        _set_legacy_unit(self._client, self.slave_id)
+                        result = self._client.write_register(
+                            definition.address, raw_value
+                        )
             return not result.isError() if hasattr(result, 'isError') else result is not None
         except Exception as ex:
             _LOGGER.error(
@@ -161,15 +166,20 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     definition.address, 1, slave=self.slave_id
                 )
             except TypeError:
-                _set_legacy_unit(self._client, self.slave_id)
                 try:
                     result = self._client.read_holding_registers(
-                        definition.address, 1
+                        definition.address, 1, device_id=self.slave_id
                     )
                 except TypeError:
-                    result = self._client.read_holding_registers(
-                        definition.address
-                    )
+                    _set_legacy_unit(self._client, self.slave_id)
+                    try:
+                        result = self._client.read_holding_registers(
+                            definition.address, 1
+                        )
+                    except TypeError:
+                        result = self._client.read_holding_registers(
+                            definition.address
+                        )
         if not result or (hasattr(result, "isError") and result.isError()):
             _LOGGER.debug(
                 "Failed reading register %s (%s)",
