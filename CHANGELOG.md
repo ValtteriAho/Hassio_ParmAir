@@ -1,3 +1,9 @@
+## 0.1.7 - Countless Legacy Clients (2025-12-27)
+
+### Fixed
+- Retry Modbus reads without a count parameter after assigning legacy attributes to support the oldest pymodbus variants.
+- Accept primitive read responses when legacy clients do not expose a `registers` buffer.
+
 ## 0.1.6 - Legacy Attribute Fallback (2025-12-27)
 
 ### Fixed

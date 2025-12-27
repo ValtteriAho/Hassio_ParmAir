@@ -116,6 +116,10 @@ For issues, feature requests, or questions, please open an issue on GitHub.
 
 ## Release Notes
 
+### 0.1.7
+- Retry Modbus reads without a count parameter to cover extremely old pymodbus clients.
+- Handle legacy read responses that do not include a `registers` attribute.
+
 ### 0.1.6
 - Assign slave/unit ids via client attributes before retrying Modbus operations to support very old pymodbus clients without keyword arguments.
 - Handle legacy responses lacking `isError()` gracefully during polling.

@@ -162,9 +162,14 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
             except TypeError:
                 _set_legacy_unit(self._client, self.slave_id)
-                result = self._client.read_holding_registers(
-                    definition.address, 1
-                )
+                try:
+                    result = self._client.read_holding_registers(
+                        definition.address, 1
+                    )
+                except TypeError:
+                    result = self._client.read_holding_registers(
+                        definition.address
+                    )
         if not result or (hasattr(result, "isError") and result.isError()):
             _LOGGER.debug(
                 "Failed reading register %s (%s)",
@@ -173,7 +178,12 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
             return None
 
-        raw = result.registers[0]
+        if hasattr(result, "registers"):
+            raw = result.registers[0]
+        elif isinstance(result, (list, tuple)):
+            raw = result[0]
+        else:
+            raw = result
 
         if definition.optional and raw < 0:
             # Device reports -1 when module isn't installed

@@ -92,9 +92,14 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
             except TypeError:
                 # Very old clients require positional arguments only or attribute assignment
                 _set_legacy_unit(client, data[CONF_SLAVE_ID])
-                result = client.read_holding_registers(
-                    power_register.address, 1
-                )
+                try:
+                    result = client.read_holding_registers(
+                        power_register.address, 1
+                    )
+                except TypeError:
+                    result = client.read_holding_registers(
+                        power_register.address
+                    )
         return not result.isError() if hasattr(result, 'isError') else result is not None
     
     try:
