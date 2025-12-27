@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 from datetime import timedelta
 from typing import Any
 
@@ -57,6 +58,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         ]
 
         self._client = ModbusTcpClient(host=self.host, port=self.port)
+        self._lock = threading.Lock()
         
         super().__init__(
             hass,
@@ -74,71 +76,73 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def _read_modbus_data(self) -> dict[str, Any]:
         """Read data from Modbus (runs in executor)."""
-        if not self._client.connected:
-            if not self._client.connect():
-                raise ModbusException("Failed to connect to Modbus device")
-        
-        data: dict[str, Any] = {"model": self.model}
-        failed_registers = []
+        with self._lock:
+            if not self._client.connected:
+                if not self._client.connect():
+                    raise ModbusException("Failed to connect to Modbus device")
+            
+            data: dict[str, Any] = {"model": self.model}
+            failed_registers = []
 
-        try:
-            for definition in self._poll_registers:
-                value = self._read_register_value(definition)
-                if value is None:
-                    failed_registers.append(f"{definition.label}({definition.register_id})")
-                    continue
-                data[definition.key] = value
+            try:
+                for definition in self._poll_registers:
+                    value = self._read_register_value(definition)
+                    if value is None:
+                        failed_registers.append(f"{definition.label}({definition.register_id})")
+                        continue
+                    data[definition.key] = value
 
-            if failed_registers:
+                if failed_registers:
+                    _LOGGER.debug(
+                        "Failed to read %d registers: %s",
+                        len(failed_registers),
+                        ", ".join(failed_registers),
+                    )
+                
                 _LOGGER.debug(
-                    "Failed to read %d registers: %s",
-                    len(failed_registers),
-                    ", ".join(failed_registers),
+                    "Read data from Parmair %s (model %s): %d values - %s",
+                    self.host,
+                    self.model,
+                    len(data) - 1,  # Exclude 'model' key
+                    data,
                 )
-            
-            _LOGGER.debug(
-                "Read data from Parmair %s (model %s): %d values - %s",
-                self.host,
-                self.model,
-                len(data) - 1,  # Exclude 'model' key
-                data,
-            )
-            return data
-            
-        except Exception as ex:
-            _LOGGER.error("Error reading from Modbus: %s", ex)
-            raise ModbusException(f"Failed to read data: {ex}") from ex
+                return data
+                
+            except Exception as ex:
+                _LOGGER.error("Error reading from Modbus: %s", ex)
+                raise ModbusException(f"Failed to read data: {ex}") from ex
 
     def write_register(self, key: str, value: float | int) -> bool:
         """Write a value to a Modbus register respecting scaling."""
 
         definition = get_register_definition(self.model, key)
         try:
-            if not self._client.connected:
-                if not self._client.connect():
-                    return False
+            with self._lock:
+                if not self._client.connected:
+                    if not self._client.connect():
+                        return False
 
-            raw_value = self._to_raw(definition, value)
-            try:
-                result = self._client.write_register(
-                    definition.address, raw_value, unit=self.slave_id
-                )
-            except TypeError:
+                raw_value = self._to_raw(definition, value)
                 try:
                     result = self._client.write_register(
-                        definition.address, raw_value, slave=self.slave_id
+                        definition.address, raw_value, unit=self.slave_id
                     )
                 except TypeError:
                     try:
                         result = self._client.write_register(
-                            definition.address, raw_value, device_id=self.slave_id
+                            definition.address, raw_value, slave=self.slave_id
                         )
                     except TypeError:
-                        _set_legacy_unit(self._client, self.slave_id)
-                        result = self._client.write_register(
-                            definition.address, raw_value
-                        )
-            return not result.isError() if hasattr(result, 'isError') else result is not None
+                        try:
+                            result = self._client.write_register(
+                                definition.address, raw_value, device_id=self.slave_id
+                            )
+                        except TypeError:
+                            _set_legacy_unit(self._client, self.slave_id)
+                            result = self._client.write_register(
+                                definition.address, raw_value
+                            )
+                return not result.isError() if hasattr(result, 'isError') else result is not None
         except Exception as ex:
             _LOGGER.error(
                 "Error writing to Modbus register %s (%s): %s",
@@ -155,8 +159,12 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_shutdown(self) -> None:
         """Close the Modbus connection."""
-        if self._client.connected:
-            await self.hass.async_add_executor_job(self._client.close)
+        def _close():
+            with self._lock:
+                if self._client.connected:
+                    self._client.close()
+        
+        await self.hass.async_add_executor_job(_close)
 
     def get_register_definition(self, key: str) -> RegisterDefinition:
         """Expose register metadata for other components."""
