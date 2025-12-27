@@ -77,98 +77,98 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         try:
             # Read power status (Register 208)
             result = self._client.read_holding_registers(
-                REGISTER_POWER, 1, slave=self.slave_id
+                REGISTER_POWER, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["power"] = result.registers[0]  # 0=Off, 1=Shutting down, 2=Starting, 3=Running
             
             # Read control state (Register 185)
             result = self._client.read_holding_registers(
-                REGISTER_CONTROL_STATE, 1, slave=self.slave_id
+                REGISTER_CONTROL_STATE, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["control_state"] = result.registers[0]  # 0=STOP, 1=AWAY, 2=HOME, 3=BOOST, etc.
             
             # Read speed control (Register 187)
             result = self._client.read_holding_registers(
-                REGISTER_SPEED_CONTROL, 1, slave=self.slave_id
+                REGISTER_SPEED_CONTROL, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["speed_control"] = result.registers[0]  # 0=AUTO, 1=STOP, 2-6=SPEED1-5
             
             # Read temperature measurements (scaled by 10)
             result = self._client.read_holding_registers(
-                REGISTER_FRESH_AIR_TEMP, 1, slave=self.slave_id
+                REGISTER_FRESH_AIR_TEMP, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["fresh_air_temp"] = result.registers[0] / 10.0
             
             result = self._client.read_holding_registers(
-                REGISTER_SUPPLY_TEMP, 1, slave=self.slave_id
+                REGISTER_SUPPLY_TEMP, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["supply_temp"] = result.registers[0] / 10.0
             
             result = self._client.read_holding_registers(
-                REGISTER_EXHAUST_TEMP, 1, slave=self.slave_id
+                REGISTER_EXHAUST_TEMP, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["exhaust_temp"] = result.registers[0] / 10.0
             
             result = self._client.read_holding_registers(
-                REGISTER_WASTE_TEMP, 1, slave=self.slave_id
+                REGISTER_WASTE_TEMP, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["waste_temp"] = result.registers[0] / 10.0
             
             # Read temperature setpoints (scaled by 10)
             result = self._client.read_holding_registers(
-                REGISTER_EXHAUST_TEMP_SETPOINT, 1, slave=self.slave_id
+                REGISTER_EXHAUST_TEMP_SETPOINT, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["exhaust_temp_setpoint"] = result.registers[0] / 10.0
             
             result = self._client.read_holding_registers(
-                REGISTER_SUPPLY_TEMP_SETPOINT, 1, slave=self.slave_id
+                REGISTER_SUPPLY_TEMP_SETPOINT, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["supply_temp_setpoint"] = result.registers[0] / 10.0
             
             # Read fan speed settings
             result = self._client.read_holding_registers(
-                REGISTER_HOME_SPEED, 1, slave=self.slave_id
+                REGISTER_HOME_SPEED, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["home_speed"] = result.registers[0]  # 0-4
             
             result = self._client.read_holding_registers(
-                REGISTER_AWAY_SPEED, 1, slave=self.slave_id
+                REGISTER_AWAY_SPEED, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["away_speed"] = result.registers[0]  # 0-4
             
             # Read state indicators
             result = self._client.read_holding_registers(
-                REGISTER_HOME_STATE, 1, slave=self.slave_id
+                REGISTER_HOME_STATE, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["home_state"] = result.registers[0]  # 0=Away, 1=Home
             
             result = self._client.read_holding_registers(
-                REGISTER_BOOST_STATE, 1, slave=self.slave_id
+                REGISTER_BOOST_STATE, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["boost_state"] = result.registers[0]  # 0=Off, 1=On
             
             result = self._client.read_holding_registers(
-                REGISTER_BOOST_TIMER, 1, slave=self.slave_id
+                REGISTER_BOOST_TIMER, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["boost_timer"] = result.registers[0]  # minutes
             
             # Read additional sensors if available
             result = self._client.read_holding_registers(
-                REGISTER_HUMIDITY, 1, slave=self.slave_id
+                REGISTER_HUMIDITY, 1, unit=self.slave_id
             )
             if not result.isError():
                 humidity = result.registers[0]
@@ -176,7 +176,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     data["humidity"] = humidity
             
             result = self._client.read_holding_registers(
-                REGISTER_CO2, 1, slave=self.slave_id
+                REGISTER_CO2, 1, unit=self.slave_id
             )
             if not result.isError():
                 co2 = result.registers[0]
@@ -185,13 +185,13 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             
             # Read alarm status
             result = self._client.read_holding_registers(
-                REGISTER_ALARM_COUNT, 1, slave=self.slave_id
+                REGISTER_ALARM_COUNT, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["alarm_count"] = result.registers[0]
             
             result = self._client.read_holding_registers(
-                REGISTER_SUM_ALARM, 1, slave=self.slave_id
+                REGISTER_SUM_ALARM, 1, unit=self.slave_id
             )
             if not result.isError():
                 data["sum_alarm"] = result.registers[0]  # 0=None, 1=Active
@@ -210,7 +210,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if not self._client.connect():
                     return False
             
-            result = self._client.write_register(register, value, slave=self.slave_id)
+            result = self._client.write_register(register, value, unit=self.slave_id)
             return not result.isError() if hasattr(result, 'isError') else result is not None
         except Exception as ex:
             _LOGGER.error("Error writing to Modbus register %s: %s", register, ex)
