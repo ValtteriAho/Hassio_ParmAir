@@ -1,8 +1,8 @@
 """DataUpdateCoordinator for Parmair integration."""
 from __future__ import annotations
 
-from datetime import timedelta
 import logging
+from datetime import timedelta
 from typing import Any
 
 from pymodbus.client import ModbusTcpClient
@@ -14,27 +14,15 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.config_entries import ConfigEntry
 
 from .const import (
+    CONF_MODEL,
     CONF_SLAVE_ID,
+    DEFAULT_MODEL,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
-    REGISTER_POWER,
-    REGISTER_CONTROL_STATE,
-    REGISTER_SPEED_CONTROL,
-    REGISTER_FRESH_AIR_TEMP,
-    REGISTER_SUPPLY_TEMP,
-    REGISTER_EXHAUST_TEMP,
-    REGISTER_WASTE_TEMP,
-    REGISTER_EXHAUST_TEMP_SETPOINT,
-    REGISTER_SUPPLY_TEMP_SETPOINT,
-    REGISTER_HOME_SPEED,
-    REGISTER_AWAY_SPEED,
-    REGISTER_HOME_STATE,
-    REGISTER_BOOST_STATE,
-    REGISTER_BOOST_TIMER,
-    REGISTER_HUMIDITY,
-    REGISTER_CO2,
-    REGISTER_ALARM_COUNT,
-    REGISTER_SUM_ALARM,
+    POLLING_REGISTER_KEYS,
+    RegisterDefinition,
+    get_register_definition,
+    get_registers_for_model,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -49,7 +37,14 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.host = entry.data[CONF_HOST]
         self.port = entry.data[CONF_PORT]
         self.slave_id = entry.data[CONF_SLAVE_ID]
-        
+        self.model = entry.data.get(CONF_MODEL, DEFAULT_MODEL)
+        self._registers = get_registers_for_model(self.model)
+        self._poll_registers: list[RegisterDefinition] = [
+            self._registers[key]
+            for key in POLLING_REGISTER_KEYS
+            if key in self._registers
+        ]
+
         self._client = ModbusTcpClient(host=self.host, port=self.port)
         
         super().__init__(
@@ -72,155 +67,99 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if not self._client.connect():
                 raise ModbusException("Failed to connect to Modbus device")
         
-        data = {}
-        
+        data: dict[str, Any] = {"model": self.model}
+
         try:
-            # Read power status (Register 208)
-            result = self._client.read_holding_registers(
-                REGISTER_POWER, 1, unit=self.slave_id
+            for definition in self._poll_registers:
+                value = self._read_register_value(definition)
+                if value is None:
+                    continue
+                data[definition.key] = value
+
+            _LOGGER.debug(
+                "Read data from Parmair %s (model %s): %s",
+                self.host,
+                self.model,
+                data,
             )
-            if not result.isError():
-                data["power"] = result.registers[0]  # 0=Off, 1=Shutting down, 2=Starting, 3=Running
-            
-            # Read control state (Register 185)
-            result = self._client.read_holding_registers(
-                REGISTER_CONTROL_STATE, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["control_state"] = result.registers[0]  # 0=STOP, 1=AWAY, 2=HOME, 3=BOOST, etc.
-            
-            # Read speed control (Register 187)
-            result = self._client.read_holding_registers(
-                REGISTER_SPEED_CONTROL, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["speed_control"] = result.registers[0]  # 0=AUTO, 1=STOP, 2-6=SPEED1-5
-            
-            # Read temperature measurements (scaled by 10)
-            result = self._client.read_holding_registers(
-                REGISTER_FRESH_AIR_TEMP, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["fresh_air_temp"] = result.registers[0] / 10.0
-            
-            result = self._client.read_holding_registers(
-                REGISTER_SUPPLY_TEMP, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["supply_temp"] = result.registers[0] / 10.0
-            
-            result = self._client.read_holding_registers(
-                REGISTER_EXHAUST_TEMP, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["exhaust_temp"] = result.registers[0] / 10.0
-            
-            result = self._client.read_holding_registers(
-                REGISTER_WASTE_TEMP, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["waste_temp"] = result.registers[0] / 10.0
-            
-            # Read temperature setpoints (scaled by 10)
-            result = self._client.read_holding_registers(
-                REGISTER_EXHAUST_TEMP_SETPOINT, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["exhaust_temp_setpoint"] = result.registers[0] / 10.0
-            
-            result = self._client.read_holding_registers(
-                REGISTER_SUPPLY_TEMP_SETPOINT, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["supply_temp_setpoint"] = result.registers[0] / 10.0
-            
-            # Read fan speed settings
-            result = self._client.read_holding_registers(
-                REGISTER_HOME_SPEED, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["home_speed"] = result.registers[0]  # 0-4
-            
-            result = self._client.read_holding_registers(
-                REGISTER_AWAY_SPEED, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["away_speed"] = result.registers[0]  # 0-4
-            
-            # Read state indicators
-            result = self._client.read_holding_registers(
-                REGISTER_HOME_STATE, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["home_state"] = result.registers[0]  # 0=Away, 1=Home
-            
-            result = self._client.read_holding_registers(
-                REGISTER_BOOST_STATE, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["boost_state"] = result.registers[0]  # 0=Off, 1=On
-            
-            result = self._client.read_holding_registers(
-                REGISTER_BOOST_TIMER, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["boost_timer"] = result.registers[0]  # minutes
-            
-            # Read additional sensors if available
-            result = self._client.read_holding_registers(
-                REGISTER_HUMIDITY, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                humidity = result.registers[0]
-                if humidity >= 0:  # -1 means not available
-                    data["humidity"] = humidity
-            
-            result = self._client.read_holding_registers(
-                REGISTER_CO2, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                co2 = result.registers[0]
-                if co2 >= 0:  # -1 means not available
-                    data["co2"] = co2
-            
-            # Read alarm status
-            result = self._client.read_holding_registers(
-                REGISTER_ALARM_COUNT, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["alarm_count"] = result.registers[0]
-            
-            result = self._client.read_holding_registers(
-                REGISTER_SUM_ALARM, 1, unit=self.slave_id
-            )
-            if not result.isError():
-                data["sum_alarm"] = result.registers[0]  # 0=None, 1=Active
-            
-            _LOGGER.debug("Read data from Parmair: %s", data)
             return data
             
         except Exception as ex:
             _LOGGER.error("Error reading from Modbus: %s", ex)
             raise ModbusException(f"Failed to read data: {ex}") from ex
 
-    def write_register(self, register: int, value: int) -> bool:
-        """Write a value to a Modbus register."""
+    def write_register(self, key: str, value: float | int) -> bool:
+        """Write a value to a Modbus register respecting scaling."""
+
+        definition = get_register_definition(self.model, key)
         try:
             if not self._client.connected:
                 if not self._client.connect():
                     return False
-            
-            result = self._client.write_register(register, value, unit=self.slave_id)
+
+            raw_value = self._to_raw(definition, value)
+            result = self._client.write_register(
+                definition.address, raw_value, unit=self.slave_id
+            )
             return not result.isError() if hasattr(result, 'isError') else result is not None
         except Exception as ex:
-            _LOGGER.error("Error writing to Modbus register %s: %s", register, ex)
+            _LOGGER.error(
+                "Error writing to Modbus register %s (%s): %s",
+                definition.register_id,
+                definition.label,
+                ex,
+            )
             return False
 
-    async def async_write_register(self, register: int, value: int) -> bool:
+    async def async_write_register(self, key: str, value: float | int) -> bool:
         """Write a value to a Modbus register (async)."""
-        return await self.hass.async_add_executor_job(self.write_register, register, value)
+
+        return await self.hass.async_add_executor_job(self.write_register, key, value)
 
     async def async_shutdown(self) -> None:
         """Close the Modbus connection."""
         if self._client.connected:
             await self.hass.async_add_executor_job(self._client.close)
+
+    def get_register_definition(self, key: str) -> RegisterDefinition:
+        """Expose register metadata for other components."""
+
+        return get_register_definition(self.model, key)
+
+    def _read_register_value(self, definition: RegisterDefinition) -> Any | None:
+        """Read and scale a single register."""
+
+        result = self._client.read_holding_registers(
+            definition.address, 1, unit=self.slave_id
+        )
+        if not result or result.isError():
+            _LOGGER.debug(
+                "Failed reading register %s (%s)",
+                definition.register_id,
+                definition.label,
+            )
+            return None
+
+        raw = result.registers[0]
+
+        if definition.optional and raw < 0:
+            # Device reports -1 when module isn't installed
+            return None
+
+        return self._from_raw(definition, raw)
+
+    @staticmethod
+    def _from_raw(definition: RegisterDefinition, raw: int) -> float | int:
+        """Convert raw register value to engineering units."""
+
+        if definition.scale == 1:
+            return raw
+        return raw * definition.scale
+
+    @staticmethod
+    def _to_raw(definition: RegisterDefinition, value: float | int) -> int:
+        """Convert a scaled value back to raw register units."""
+
+        if definition.scale == 1:
+            return int(value)
+        return int(round(float(value) / definition.scale))

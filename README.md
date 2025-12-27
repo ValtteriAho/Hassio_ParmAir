@@ -21,8 +21,10 @@ A custom Home Assistant integration for Parmair ventilation systems via Modbus T
   - CO2 levels
   - Alarm status
   - Boost timer
+  - Register metadata exposed via entity attributes for diagnostics
   
 - **Local Polling**: Direct communication with your device via Modbus TCP
+- **Model-Aware Registers**: Select the matching Parmair hardware profile (MAC80 today, MAC150 placeholder) so the integration reads and writes the correct register map
 
 ## System Information
 
@@ -40,6 +42,7 @@ This integration targets Parmair "My Air Control" firmware V1.87 behaviour obser
    - IP Address
    - Port (default: 502)
    - Modbus Slave ID (default: 1)
+  - Parmair Model (MAC80 default, MAC150 placeholder)
    - Name (optional)
 
 ## Configuration
@@ -74,6 +77,7 @@ The integration is configured through the Home Assistant UI. You'll need:
 Optional sensors (if hardware is present):
 - **Humidity**: Indoor humidity level
 - **CO2**: Indoor CO2 concentration
+- Entity attributes include the selected model plus register id, address, and scaling to aid troubleshooting
 
 ## Modbus Registers
 

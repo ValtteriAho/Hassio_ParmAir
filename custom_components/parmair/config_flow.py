@@ -14,12 +14,16 @@ from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
 
 from .const import (
+    CONF_MODEL,
     CONF_SLAVE_ID,
+    DEFAULT_MODEL,
     DEFAULT_NAME,
     DEFAULT_PORT,
     DEFAULT_SLAVE_ID,
     DOMAIN,
-    REGISTER_POWER,
+    REG_POWER,
+    SUPPORTED_MODELS,
+    get_register_definition,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -36,6 +40,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_SLAVE_ID, default=DEFAULT_SLAVE_ID): vol.All(
             vol.Coerce(int), vol.Range(min=1, max=247)
         ),
+        vol.Required(CONF_MODEL, default=DEFAULT_MODEL): vol.In(SUPPORTED_MODELS),
         vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
     }
 )
@@ -44,6 +49,8 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Validate the user input allows us to connect."""
     client = ModbusTcpClient(host=data[CONF_HOST], port=data[CONF_PORT])
+    model = data.get(CONF_MODEL, DEFAULT_MODEL)
+    power_register = get_register_definition(model, REG_POWER)
     
     def _connect():
         """Connect to the Modbus device."""
@@ -59,7 +66,9 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
     # Try to read a register to verify communication
     def _read_test():
         """Test reading from the device."""
-        result = client.read_holding_registers(REGISTER_POWER, 1, unit=data[CONF_SLAVE_ID])
+        result = client.read_holding_registers(
+            power_register.address, 1, unit=data[CONF_SLAVE_ID]
+        )
         return not result.isError() if hasattr(result, 'isError') else result is not None
     
     try:
@@ -69,7 +78,7 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
     finally:
         client.close()
     
-    return {"title": data[CONF_NAME]}
+    return {"title": data[CONF_NAME], "model": model}
 
 
 class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):

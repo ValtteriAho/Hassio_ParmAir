@@ -1,3 +1,13 @@
+## 0.1.3 - Model-Aware Registers (2025-12-27)
+
+### Added
+- Register metadata definitions per hardware model with placeholder support for MAC150
+- Config flow model selector to ensure correct register mapping on setup
+- Extra diagnostics attributes exposing register ids, addresses, and model info on fan and sensors
+
+### Changed
+- Coordinator read/write logic now scales values using register definitions instead of hard-coded addresses
+
 ## 0.1.2 - Handler Compatibility (2025-12-27)
 
 ### Fixed

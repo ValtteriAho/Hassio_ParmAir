@@ -15,15 +15,16 @@ from homeassistant.util.percentage import (
 )
 
 from .const import (
+    DEFAULT_NAME,
     DOMAIN,
-    REGISTER_POWER,
-    REGISTER_CONTROL_STATE,
-    MODE_STOP,
     MODE_AWAY,
-    MODE_HOME,
     MODE_BOOST,
+    MODE_HOME,
+    MODE_STOP,
     POWER_OFF,
     POWER_RUNNING,
+    REG_CONTROL_STATE,
+    REG_POWER,
 )
 from .coordinator import ParmairCoordinator
 
@@ -66,9 +67,9 @@ class ParmairFan(CoordinatorEntity[ParmairCoordinator], FanEntity):
         self._attr_unique_id = f"{entry.entry_id}_fan"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": entry.data.get("name", "Parmair Ventilation"),
+            "name": entry.data.get("name", DEFAULT_NAME),
             "manufacturer": "Parmair",
-            "model": "Ventilation System",
+            "model": coordinator.model,
         }
 
     @property
@@ -122,7 +123,7 @@ class ParmairFan(CoordinatorEntity[ParmairCoordinator], FanEntity):
         """Turn on the fan."""
         # First ensure power is on
         if self.coordinator.data.get("power") != POWER_RUNNING:
-            await self.coordinator.async_write_register(REGISTER_POWER, POWER_RUNNING)
+            await self.coordinator.async_write_register(REG_POWER, POWER_RUNNING)
             await self.coordinator.async_request_refresh()
         
         # Then set mode
@@ -132,12 +133,12 @@ class ParmairFan(CoordinatorEntity[ParmairCoordinator], FanEntity):
             await self.async_set_percentage(percentage)
         else:
             # Default to HOME mode
-            await self.coordinator.async_write_register(REGISTER_CONTROL_STATE, MODE_HOME)
+            await self.coordinator.async_write_register(REG_CONTROL_STATE, MODE_HOME)
             await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn off the fan."""
-        if await self.coordinator.async_write_register(REGISTER_CONTROL_STATE, MODE_STOP):
+        if await self.coordinator.async_write_register(REG_CONTROL_STATE, MODE_STOP):
             await self.coordinator.async_request_refresh()
 
     async def async_set_percentage(self, percentage: int) -> None:
@@ -160,5 +161,15 @@ class ParmairFan(CoordinatorEntity[ParmairCoordinator], FanEntity):
         
         if preset_mode in mode_map:
             mode_value = mode_map[preset_mode]
-            if await self.coordinator.async_write_register(REGISTER_CONTROL_STATE, mode_value):
+            if await self.coordinator.async_write_register(REG_CONTROL_STATE, mode_value):
                 await self.coordinator.async_request_refresh()
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        """Expose high-level metadata for diagnostics."""
+
+        return {
+            "parmair_model": self.coordinator.model,
+            "parmair_power_register": self.coordinator.get_register_definition(REG_POWER).label,
+            "parmair_control_register": self.coordinator.get_register_definition(REG_CONTROL_STATE).label,
+        }

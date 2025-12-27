@@ -19,7 +19,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import DOMAIN, DEFAULT_NAME
 from .coordinator import ParmairCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -63,7 +63,44 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class ParmairTemperatureSensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
+class ParmairRegisterEntity(CoordinatorEntity[ParmairCoordinator]):
+    """Base entity that exposes register metadata."""
+
+    def __init__(
+        self,
+        coordinator: ParmairCoordinator,
+        entry: ConfigEntry,
+        data_key: str,
+        name: str,
+    ) -> None:
+        super().__init__(coordinator)
+        self._data_key = data_key
+        self._register = coordinator.get_register_definition(data_key)
+        self._attr_name = name
+        self._attr_unique_id = f"{entry.entry_id}_{data_key}"
+        self._attr_has_entity_name = True
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": entry.data.get("name", DEFAULT_NAME),
+            "manufacturer": "Parmair",
+            "model": coordinator.model,
+        }
+
+    @property
+    def extra_state_attributes(self) -> dict[str, object]:
+        """Expose register metadata for diagnostics."""
+
+        return {
+            "parmair_model": self.coordinator.model,
+            "parmair_register": self._register.label,
+            "parmair_register_id": self._register.register_id,
+            "parmair_register_address": self._register.address,
+            "parmair_register_scale": self._register.scale,
+            "parmair_register_writable": self._register.writable,
+        }
+
+
+class ParmairTemperatureSensor(ParmairRegisterEntity, SensorEntity):
     """Representation of a Parmair temperature sensor."""
 
     _attr_has_entity_name = True
@@ -79,16 +116,7 @@ class ParmairTemperatureSensor(CoordinatorEntity[ParmairCoordinator], SensorEnti
         name: str,
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator)
-        self._data_key = data_key
-        self._attr_name = name
-        self._attr_unique_id = f"{entry.entry_id}_{data_key}"
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": entry.data.get("name", "Parmair Ventilation"),
-            "manufacturer": "Parmair",
-            "model": "Ventilation System",
-        }
+        super().__init__(coordinator, entry, data_key, name)
 
     @property
     def native_value(self) -> float | None:
@@ -96,7 +124,7 @@ class ParmairTemperatureSensor(CoordinatorEntity[ParmairCoordinator], SensorEnti
         return self.coordinator.data.get(self._data_key)
 
 
-class ParmairHumiditySensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
+class ParmairHumiditySensor(ParmairRegisterEntity, SensorEntity):
     """Representation of a Parmair humidity sensor."""
 
     _attr_has_entity_name = True
@@ -112,16 +140,7 @@ class ParmairHumiditySensor(CoordinatorEntity[ParmairCoordinator], SensorEntity)
         name: str,
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator)
-        self._data_key = data_key
-        self._attr_name = name
-        self._attr_unique_id = f"{entry.entry_id}_{data_key}"
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": entry.data.get("name", "Parmair Ventilation"),
-            "manufacturer": "Parmair",
-            "model": "Ventilation System",
-        }
+        super().__init__(coordinator, entry, data_key, name)
 
     @property
     def native_value(self) -> int | None:
@@ -129,7 +148,7 @@ class ParmairHumiditySensor(CoordinatorEntity[ParmairCoordinator], SensorEntity)
         return self.coordinator.data.get(self._data_key)
 
 
-class ParmairCO2Sensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
+class ParmairCO2Sensor(ParmairRegisterEntity, SensorEntity):
     """Representation of a Parmair CO2 sensor."""
 
     _attr_has_entity_name = True
@@ -145,16 +164,7 @@ class ParmairCO2Sensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
         name: str,
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator)
-        self._data_key = data_key
-        self._attr_name = name
-        self._attr_unique_id = f"{entry.entry_id}_{data_key}"
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": entry.data.get("name", "Parmair Ventilation"),
-            "manufacturer": "Parmair",
-            "model": "Ventilation System",
-        }
+        super().__init__(coordinator, entry, data_key, name)
 
     @property
     def native_value(self) -> int | None:
@@ -162,7 +172,7 @@ class ParmairCO2Sensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
         return self.coordinator.data.get(self._data_key)
 
 
-class ParmairStateSensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
+class ParmairStateSensor(ParmairRegisterEntity, SensorEntity):
     """Representation of a Parmair state sensor."""
 
     _attr_has_entity_name = True
@@ -175,16 +185,7 @@ class ParmairStateSensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
         name: str,
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator)
-        self._data_key = data_key
-        self._attr_name = name
-        self._attr_unique_id = f"{entry.entry_id}_{data_key}"
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": entry.data.get("name", "Parmair Ventilation"),
-            "manufacturer": "Parmair",
-            "model": "Ventilation System",
-        }
+        super().__init__(coordinator, entry, data_key, name)
 
     @property
     def native_value(self) -> int | None:
@@ -192,7 +193,7 @@ class ParmairStateSensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
         return self.coordinator.data.get(self._data_key)
 
 
-class ParmairTimerSensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
+class ParmairTimerSensor(ParmairRegisterEntity, SensorEntity):
     """Representation of a Parmair timer sensor."""
 
     _attr_has_entity_name = True
@@ -207,16 +208,7 @@ class ParmairTimerSensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
         name: str,
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator)
-        self._data_key = data_key
-        self._attr_name = name
-        self._attr_unique_id = f"{entry.entry_id}_{data_key}"
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": entry.data.get("name", "Parmair Ventilation"),
-            "manufacturer": "Parmair",
-            "model": "Ventilation System",
-        }
+        super().__init__(coordinator, entry, data_key, name)
 
     @property
     def native_value(self) -> int | None:
@@ -224,7 +216,7 @@ class ParmairTimerSensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
         return self.coordinator.data.get(self._data_key)
 
 
-class ParmairAlarmSensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
+class ParmairAlarmSensor(ParmairRegisterEntity, SensorEntity):
     """Representation of a Parmair alarm sensor."""
 
     _attr_has_entity_name = True
@@ -238,16 +230,7 @@ class ParmairAlarmSensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
         name: str,
     ) -> None:
         """Initialize the sensor."""
-        super().__init__(coordinator)
-        self._data_key = data_key
-        self._attr_name = name
-        self._attr_unique_id = f"{entry.entry_id}_{data_key}"
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": entry.data.get("name", "Parmair Ventilation"),
-            "manufacturer": "Parmair",
-            "model": "Ventilation System",
-        }
+        super().__init__(coordinator, entry, data_key, name)
 
     @property
     def native_value(self) -> int | None:
