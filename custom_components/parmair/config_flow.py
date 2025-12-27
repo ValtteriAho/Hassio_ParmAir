@@ -12,6 +12,7 @@ from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
+from homeassistant.loader import async_get_integration
 
 from .const import (
     CONF_MODEL,
@@ -98,12 +99,24 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    def __init__(self) -> None:
+        """Initialize the config flow."""
+
+        self._integration_version: str | None = None
+
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the initial step."""
         errors: dict[str, str] = {}
         
+        if self._integration_version is None:
+            try:
+                integration = await async_get_integration(self.hass, DOMAIN)
+                self._integration_version = integration.version or "unknown"
+            except Exception:  # pragma: no cover - fallback if manifest missing
+                self._integration_version = "unknown"
+
         if user_input is not None:
             # Create unique ID based on host and slave ID
             await self.async_set_unique_id(
@@ -121,5 +134,10 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "unknown"
         
         return self.async_show_form(
-            step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
+            step_id="user",
+            data_schema=STEP_USER_DATA_SCHEMA,
+            errors=errors,
+            description_placeholders={
+                "version": self._integration_version or "unknown",
+            },
         )
