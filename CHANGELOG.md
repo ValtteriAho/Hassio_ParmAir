@@ -1,3 +1,11 @@
+## 0.1.10 - Register Address Fix (2025-12-27)
+
+### Fixed
+- **CRITICAL**: Fixed all Modbus register addresses by adding +1000 offset to match actual device addressing
+- Register 20 is now correctly addressed as 1019 (not 19), register 124 as 1124, etc.
+- This was the root cause preventing all sensor data from being read correctly
+- Slave ID 0 should be used instead of default slave ID 1 for most devices
+
 ## 0.1.9 - Thread Safety & Auto-Detection (2025-12-27)
 
 ### Fixed
