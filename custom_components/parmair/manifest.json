@@ -1,6 +1,6 @@
 {
   "domain": "parmair",
-  "name": "Parmair Ventilation",
+  "name": "Parmair MAC",
   "codeowners": ["@ValtteriAho"],
   "config_flow": true,
   "dependencies": [],
@@ -8,5 +8,5 @@
   "integration_type": "device",
   "iot_class": "local_polling",
   "requirements": ["pymodbus>=3.11.2"],
-  "version": "0.1.12"
+  "version": "0.1.13"
 }

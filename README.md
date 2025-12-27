@@ -1,6 +1,6 @@
-# Parmair Ventilation - Home Assistant Integration
+# Parmair MAC - Home Assistant Integration
 
-A custom Home Assistant integration for Parmair ventilation systems via Modbus TCP communication.
+A custom Home Assistant integration for Parmair MAC ventilation systems via Modbus TCP communication.
 
 ## Features
 
@@ -37,7 +37,7 @@ This integration targets Parmair "My Air Control" firmware V1.87 behaviour obser
 1. Copy the `custom_components/parmair` folder to your Home Assistant `custom_components` directory
 2. Restart Home Assistant
 3. Go to Settings → Devices & Services → Add Integration
-4. Search for "Parmair Ventilation"
+4. Search for "Parmair MAC"
 5. Enter your device's connection details:
    - IP Address
    - Port (default: 502)
@@ -59,7 +59,7 @@ The hardware model (MAC80/MAC150) is automatically detected by reading the VENT_
 ## Entities Created
 
 ### Fan Entity
-- **parmair_ventilation**: Main control for the ventilation system
+- **parmair_mac**: Main control for the ventilation system
   - Presets: Away, Home, Boost
   - Speed control (percentage based on preset)
 

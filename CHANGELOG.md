@@ -1,3 +1,10 @@
+## 0.1.13 - Branding Update (2025-12-27)
+
+### Changed
+- Updated integration name from "Parmair Ventilation" to "Parmair MAC" to align with official product naming
+- Updated all references in documentation and user-facing strings
+- Added disclaimer about project independence from Parmair
+
 ## 0.1.12 - Address Calculation Fix (2025-12-27)
 
 ### Fixed

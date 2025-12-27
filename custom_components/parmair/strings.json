@@ -2,8 +2,8 @@
   "config": {
     "step": {
       "user": {
-        "title": "Connect to Parmair Ventilation",
-        "description": "Enter the connection details for your Parmair ventilation system. Hardware model will be auto-detected. Current version: {version}.",
+        "title": "Connect to Parmair MAC",
+        "description": "Enter the connection details for your Parmair MAC ventilation system. Hardware model will be auto-detected. Current version: {version}.",
         "data": {
           "host": "IP Address",
           "port": "Port",
