@@ -1,4 +1,30 @@
-## 0.2.0 - Controllable Entities & Finnish Translation (2025-12-27)
+## 0.2.3 - Enhanced Control & Monitoring (2025-12-28)
+
+### Added
+- **Button Platform** with 2 actions:
+  - Acknowledge Alarms button - Clear active alarms (register 3)
+  - Filter Replaced button - Acknowledge filter change (register 205)
+- **Select Platform** with configuration:
+  - Heater Type selector - Choose between Water/Electric heater (register 240)
+- **Number Entities** (2 additional):
+  - Summer Mode Temperature Limit (15-30°C, register 78) - Outdoor temp to disable heat recovery
+  - Filter Change Interval (3/4/6 months, register 85) - Set maintenance schedule
+- **Sensor Entities** (7 additional):
+  - Heat Recovery Efficiency - Real-time efficiency % (register 190)
+  - Overpressure Timer - Fireplace mode time remaining (register 204)
+  - Defrost State - Heat recovery defrost active (register 183)
+  - Supply Fan Speed - Current fan output % (register 40)
+  - Exhaust Fan Speed - Current fan output % (register 42)
+  - Filter Status - Replace/OK status (register 205)
+
+### Changed
+- Updated HACS domains to include "button" and "select"
+- Extended polling to include performance and state monitoring registers
+
+## 0.2.2 - Temperature Sensor Fix (2025-12-28)
+
+### Fixed
+- Added missing TE05_M temperature sensor (Register 22, Address 1022)
 
 ### Added
 - **Number Platform**: Control fan speed presets and temperature setpoints

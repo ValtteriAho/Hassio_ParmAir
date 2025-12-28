@@ -54,8 +54,18 @@ async def async_setup_entry(
         ParmairStateSensor(coordinator, entry, "home_state", "Home/Away State"),
         ParmairStateSensor(coordinator, entry, "boost_state", "Boost State"),
         ParmairTimerSensor(coordinator, entry, "boost_timer", "Boost Timer"),
+        ParmairTimerSensor(coordinator, entry, "overpressure_timer", "Overpressure Timer"),
         ParmairAlarmSensor(coordinator, entry, "alarm_count", "Alarm Count"),
         ParmairAlarmSensor(coordinator, entry, "sum_alarm", "Summary Alarm"),
+        
+        # State sensors
+        ParmairStateSensor(coordinator, entry, "defrost_state", "Defrost State"),
+        ParmairStateSensor(coordinator, entry, "filter_state", "Filter Status"),
+        
+        # Performance sensors
+        ParmairPercentageSensor(coordinator, entry, "heat_recovery_efficiency", "Heat Recovery Efficiency"),
+        ParmairPercentageSensor(coordinator, entry, "supply_fan_speed", "Supply Fan Speed"),
+        ParmairPercentageSensor(coordinator, entry, "exhaust_fan_speed", "Exhaust Fan Speed"),
         
         # Optional sensors (will show unavailable if hardware not present)
         ParmairHumiditySensor(coordinator, entry, "humidity", "Humidity"),
@@ -244,5 +254,29 @@ class ParmairAlarmSensor(ParmairRegisterEntity, SensorEntity):
 
     @property
     def native_value(self) -> int | None:
+        """Return the sensor value."""
+        return self.coordinator.data.get(self._data_key)
+
+
+class ParmairPercentageSensor(ParmairRegisterEntity, SensorEntity):
+    """Representation of a Parmair percentage sensor."""
+
+    _attr_has_entity_name = True
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_icon = "mdi:gauge"
+
+    def __init__(
+        self,
+        coordinator: ParmairCoordinator,
+        entry: ConfigEntry,
+        data_key: str,
+        name: str,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, entry, data_key, name)
+
+    @property
+    def native_value(self) -> float | None:
         """Return the sensor value."""
         return self.coordinator.data.get(self._data_key)

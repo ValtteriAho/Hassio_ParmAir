@@ -79,6 +79,25 @@ REG_SUMMER_MODE = "summer_mode"
 REG_TIME_PROGRAM_ENABLE = "time_program_enable"
 REG_HEATER_ENABLE = "heater_enable"
 
+# Button register keys
+REG_ACKNOWLEDGE_ALARMS = "acknowledge_alarms"
+REG_FILTER_REPLACED = "filter_replaced"
+
+# Select register keys
+REG_HEATER_TYPE = "heater_type"
+
+# Additional number register keys
+REG_SUMMER_MODE_TEMP_LIMIT = "summer_mode_temp_limit"
+REG_FILTER_INTERVAL = "filter_interval"
+
+# Additional sensor register keys
+REG_HEAT_RECOVERY_EFFICIENCY = "heat_recovery_efficiency"
+REG_OVERPRESSURE_TIMER = "overpressure_timer"
+REG_DEFROST_STATE = "defrost_state"
+REG_SUPPLY_FAN_SPEED = "supply_fan_speed"
+REG_EXHAUST_FAN_SPEED = "exhaust_fan_speed"
+REG_FILTER_STATE = "filter_state"
+
 
 def _build_mac80_registers() -> Dict[str, RegisterDefinition]:
     """Return register map for the MAC80 firmware."""
@@ -155,6 +174,43 @@ def _build_mac80_registers() -> Dict[str, RegisterDefinition]:
         REG_HEATER_ENABLE: RegisterDefinition(
             REG_HEATER_ENABLE, 1109, "HEATER_ENABLE_S", writable=True
         ),
+        # Button registers
+        REG_ACKNOWLEDGE_ALARMS: RegisterDefinition(
+            REG_ACKNOWLEDGE_ALARMS, 1003, "ACK_ALARMS", writable=True
+        ),
+        REG_FILTER_REPLACED: RegisterDefinition(
+            REG_FILTER_REPLACED, 1205, "FILTER_STATE_FI", writable=True
+        ),
+        # Select registers
+        REG_HEATER_TYPE: RegisterDefinition(
+            REG_HEATER_TYPE, 1240, "HEAT_RADIATOR_TYPE", writable=True
+        ),
+        # Additional number registers
+        REG_SUMMER_MODE_TEMP_LIMIT: RegisterDefinition(
+            REG_SUMMER_MODE_TEMP_LIMIT, 1078, "SUMMER_MODE_TE01_LIMIT", scale=0.1, writable=True
+        ),
+        REG_FILTER_INTERVAL: RegisterDefinition(
+            REG_FILTER_INTERVAL, 1085, "FILTER_INTERVAL_S", writable=True
+        ),
+        # Additional sensor registers
+        REG_HEAT_RECOVERY_EFFICIENCY: RegisterDefinition(
+            REG_HEAT_RECOVERY_EFFICIENCY, 1190, "FG50_EA_M", scale=0.1
+        ),
+        REG_OVERPRESSURE_TIMER: RegisterDefinition(
+            REG_OVERPRESSURE_TIMER, 1204, "OVERP_TIMER_FM"
+        ),
+        REG_DEFROST_STATE: RegisterDefinition(
+            REG_DEFROST_STATE, 1183, "DFRST_FI"
+        ),
+        REG_SUPPLY_FAN_SPEED: RegisterDefinition(
+            REG_SUPPLY_FAN_SPEED, 1040, "TF10_Y", scale=0.1
+        ),
+        REG_EXHAUST_FAN_SPEED: RegisterDefinition(
+            REG_EXHAUST_FAN_SPEED, 1042, "PF30_Y", scale=0.1
+        ),
+        REG_FILTER_STATE: RegisterDefinition(
+            REG_FILTER_STATE, 1205, "FILTER_STATE_FI"
+        ),
     }
 
 
@@ -193,6 +249,12 @@ POLLING_REGISTER_KEYS = (
     REG_ALARM_COUNT,
     REG_SUM_ALARM,
     REG_ALARMS_STATE,
+    REG_HEAT_RECOVERY_EFFICIENCY,
+    REG_OVERPRESSURE_TIMER,
+    REG_DEFROST_STATE,
+    REG_SUPPLY_FAN_SPEED,
+    REG_EXHAUST_FAN_SPEED,
+    REG_FILTER_STATE,
 )
 
 

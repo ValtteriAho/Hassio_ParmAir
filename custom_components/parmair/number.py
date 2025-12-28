@@ -16,7 +16,9 @@ from .const import (
     REG_AWAY_SPEED,
     REG_BOOST_SETTING,
     REG_EXHAUST_TEMP_SETPOINT,
+    REG_FILTER_INTERVAL,
     REG_HOME_SPEED,
+    REG_SUMMER_MODE_TEMP_LIMIT,
     REG_SUPPLY_TEMP_SETPOINT,
 )
 from .coordinator import ParmairCoordinator
@@ -41,6 +43,12 @@ async def async_setup_entry(
         ),
         ParmairTemperatureSetpointNumber(
             coordinator, entry, REG_SUPPLY_TEMP_SETPOINT, "Supply Temperature Setpoint"
+        ),
+        ParmairTemperatureSetpointNumber(
+            coordinator, entry, REG_SUMMER_MODE_TEMP_LIMIT, "Summer Mode Temperature Limit"
+        ),
+        ParmairFilterIntervalNumber(
+            coordinator, entry, REG_FILTER_INTERVAL, "Filter Change Interval"
         ),
     ]
 
@@ -132,3 +140,38 @@ class ParmairTemperatureSetpointNumber(ParmairNumberEntity):
             self._attr_native_min_value = 15.0
             self._attr_native_max_value = 25.0
             self._attr_native_step = 0.5
+        elif data_key == REG_SUMMER_MODE_TEMP_LIMIT:
+            self._attr_native_min_value = 15.0
+            self._attr_native_max_value = 30.0
+            self._attr_native_step = 0.5
+
+
+class ParmairFilterIntervalNumber(ParmairNumberEntity):
+    """Number entity for filter change interval (months)."""
+
+    _attr_mode = NumberMode.BOX
+    _attr_native_min_value = 0
+    _attr_native_max_value = 2
+    _attr_native_step = 1
+    _attr_icon = "mdi:air-filter"
+    _attr_native_unit_of_measurement = "setting"
+
+    def __init__(
+        self,
+        coordinator: ParmairCoordinator,
+        entry: ConfigEntry,
+        data_key: str,
+        name: str,
+    ) -> None:
+        """Initialize filter interval number."""
+        super().__init__(coordinator, entry, data_key, name)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional attributes."""
+        attrs = super().extra_state_attributes if hasattr(super(), 'extra_state_attributes') else {}
+        value = self.native_value
+        if value is not None:
+            interval_map = {0: "3 months", 1: "4 months", 2: "6 months"}
+            attrs["interval_description"] = interval_map.get(int(value), "Unknown")
+        return attrs
