@@ -46,19 +46,26 @@ This integration targets Parmair "My Air Control" firmware V1.87 behaviour obser
 
 ## Installation
 
-### Manual Installation
+### HACS Installation (Recommended)
 
-1. Copy the `custom_components/parmair` folder to your Home Assistant `custom_components` directory
-2. Restart Home Assistant
-3. Go to Settings → Devices & Services → Add Integration
-4. Search for "Parmair MAC"
-5. Enter your device's connection details:
-   - IP Address
-   - Port (default: 502)
-   - Modbus Slave ID (default: 1)
-   - Name (optional)
-   
-   Hardware model will be auto-detected from the device.
+1. Open HACS in Home Assistant
+2. Click the 3 dots in the top right corner
+3. Select "Custom repositories"
+4. Add this repository URL: `https://github.com/ValtteriAho/Hassio_Parmair`
+5. Select category: "Integration"
+6. Click "Add"
+7. Find "Parmair MAC" in HACS and click "Download"
+8. Restart Home Assistant
+9. Go to Settings → Devices & Services → Add Integration
+10. Search for "Parmair MAC"
+11. Enter your device's connection details:
+    - IP Address
+    - Port (default: 502)
+    - Modbus Slave ID (default: 1)
+    - Polling Interval (default: 30 seconds)
+    - Name (optional)
+
+Hardware model will be auto-detected from the device.
 
 ## Configuration
 
@@ -140,6 +147,13 @@ This integration follows Home Assistant's development guidelines and uses:
 For issues, feature requests, or questions, please open an issue on GitHub.
 
 ## Release Notes
+
+### 0.2.3
+- **Button Platform**: Acknowledge Alarms, Filter Replaced buttons
+- **Select Platform**: Heater Type selector (Water/Electric)
+- **Number Controls**: Summer Mode Temperature Limit, Filter Change Interval
+- **Sensor Monitoring**: Heat Recovery Efficiency, Overpressure Timer, Defrost State, Supply/Exhaust Fan Speeds, Filter Status
+- **Extended Polling**: 6 additional registers for enhanced monitoring
 
 ### 0.2.2
 - **Fixed Missing Sensor**: Added TE05_M temperature sensor (Register 22, Address 1022).
