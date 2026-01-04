@@ -331,7 +331,7 @@ def detect_firmware_version(sw_version_value: float) -> str:
     return FIRMWARE_V1
 
 
-def get_register_definition(model: str, key: str, firmware_version: str = None, firmware_version: str = None) -> RegisterDefinition:
+def get_register_definition(model: str, key: str, firmware_version: str = None) -> RegisterDefinition:
     """Return the register definition for a given model/firmware and key.
     
     Args:

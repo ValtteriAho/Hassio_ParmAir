@@ -1,3 +1,8 @@
+## 0.3.3 - Bugfix Release (2026-01-04)
+
+### Fixed
+- Fixed duplicate argument in function definition causing syntax error
+
 ## 0.3.2 - Bugfix Release (2026-01-04)
 
 ### Fixed
