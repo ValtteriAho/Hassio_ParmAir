@@ -1,3 +1,37 @@
+## 0.7.0 - Software Version Detection & Register Versioning (2026-01-04)
+
+### Added
+- **Auto-detection during setup:**
+  - Software version detection (1.xx or 2.xx)
+  - Heater type detection (None/Water/Electric)
+- **Manual configuration fallback:**
+  - If auto-detection fails, user can manually select software version and heater type
+  - User-friendly selection interface
+- **Version-specific register maps:**
+  - Infrastructure for v1.xx and v2.xx register addresses
+  - Current implementation uses v1 addresses (CSV documentation)
+  - v2 addresses prepared as placeholder for future update
+
+### Changed
+- Coordinator now uses version-specific register map based on detected software version
+- Register map selection: `get_registers_for_version(software_version)`
+- Renamed `_build_registers()` to `_build_registers_v1()` (documented as version 1.xx from CSV)
+- Added `_build_registers_v2()` placeholder (TODO: update when v2 addresses available)
+
+### Technical
+- Added CONF_SOFTWARE_VERSION and CONF_HEATER_TYPE to config entry
+- Added SOFTWARE_VERSION_1, SOFTWARE_VERSION_2, SOFTWARE_VERSION_UNKNOWN constants
+- Added HEATER_TYPE_NONE, HEATER_TYPE_WATER, HEATER_TYPE_ELECTRIC constants
+- Coordinator stores software_version and heater_type attributes
+- Enhanced config_flow with _detect_device_info() function
+- Added async_step_manual_config() for manual selection
+- get_register_definition() now accepts optional registers parameter
+
+### Notes
+- Current CSV documentation = v1.xx register addresses
+- v2.xx register addresses will be added in future update
+- Default fallback to v1 registers if version unknown
+
 ## 0.6.9 - Switch Predefined Values Display (2026-01-04)
 
 ### Added

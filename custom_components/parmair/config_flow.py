@@ -27,14 +27,25 @@ def _set_legacy_unit(client: ModbusTcpClient, unit_id: int) -> None:
 
 
 from .const import (
+    CONF_HEATER_TYPE,
     CONF_SCAN_INTERVAL,
     CONF_SLAVE_ID,
+    CONF_SOFTWARE_VERSION,
     DEFAULT_NAME,
     DEFAULT_PORT,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SLAVE_ID,
     DOMAIN,
+    HEATER_TYPE_ELECTRIC,
+    HEATER_TYPE_NONE,
+    HEATER_TYPE_UNKNOWN,
+    HEATER_TYPE_WATER,
+    REG_HEATER_TYPE,
     REG_POWER,
+    REG_SOFTWARE_VERSION,
+    SOFTWARE_VERSION_1,
+    SOFTWARE_VERSION_2,
+    SOFTWARE_VERSION_UNKNOWN,
     get_register_definition,
 )
 
@@ -61,7 +72,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 
 
 async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
-    """Validate the user input allows us to connect."""
+    """Validate the user input allows us to connect and detect device info."""
     client = ModbusTcpClient(host=data[CONF_HOST], port=data[CONF_PORT])
     
     def _connect():
@@ -75,65 +86,15 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
         client.close()
         raise CannotConnect
     
-    # Auto-detect hardware model by reading VENT_MACHINE register
-    def _detect_model_and_firmware():
-        """Detect hardware model and firmware version from device."""
-        detected_model = DEFAULT_MODEL
-        detected_firmware = DEFAULT_FIRMWARE
+    # Auto-detect software version and heater type
+    def _detect_device_info():
+        """Detect software version and heater type from device."""
+        detected_sw_version = SOFTWARE_VERSION_UNKNOWN
+        detected_heater_type = HEATER_TYPE_UNKNOWN
         
+        # Try to read software version
         try:
-            # Read hardware type register
-            hardware_reg = get_register_definition(DEFAULT_MODEL, REG_HARDWARE_TYPE, DEFAULT_FIRMWARE)
-            try:
-                result = client.read_holding_registers(
-                    hardware_reg.address, 1, unit=data[CONF_SLAVE_ID]
-                )
-            except TypeError:
-                try:
-                    result = client.read_holding_registers(
-                        hardware_reg.address, 1, slave=data[CONF_SLAVE_ID]
-                    )
-                except TypeError:
-                    try:
-                        result = client.read_holding_registers(
-                            hardware_reg.address, 1, device_id=data[CONF_SLAVE_ID]
-                        )
-                    except TypeError:
-                        _set_legacy_unit(client, data[CONF_SLAVE_ID])
-                        try:
-                            result = client.read_holding_registers(
-                                hardware_reg.address, 1
-                            )
-                        except TypeError:
-                            result = client.read_holding_registers(
-                                hardware_reg.address
-                            )
-            
-            # Extract hardware type value
-            if hasattr(result, "registers"):
-                hardware_type = result.registers[0]
-            elif isinstance(result, (list, tuple)):
-                hardware_type = result[0]
-            else:
-                hardware_type = result
-            
-            # Format model based on VENT_MACHINE value
-            if hardware_type in (80, 100, 150):
-                detected_model = f"MAC{hardware_type}"
-            else:
-                detected_model = MODEL_UNKNOWN
-            
-            _LOGGER.info(
-                "Auto-detected VENT_MACHINE value: %s, model: %s",
-                hardware_type,
-                detected_model,
-            )
-        except Exception as ex:
-            _LOGGER.warning("Could not auto-detect model, using default: %s", ex)
-        
-        # Try to read software version to determine firmware family
-        try:
-            sw_reg = get_register_definition(DEFAULT_MODEL, REG_SOFTWARE_VERSION, DEFAULT_FIRMWARE)
+            sw_reg = get_register_definition(REG_SOFTWARE_VERSION)
             try:
                 result = client.read_holding_registers(
                     sw_reg.address, 1, unit=data[CONF_SLAVE_ID]
@@ -150,7 +111,7 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
                     )
             
             # Extract and scale software version
-            if hasattr(result, "registers"):
+            if hasattr(result, \"registers\"):
                 raw_sw = result.registers[0]
             elif isinstance(result, (list, tuple)):
                 raw_sw = result[0]
@@ -158,22 +119,71 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
                 raw_sw = result
             
             sw_version = raw_sw * sw_reg.scale
-            detected_firmware = detect_firmware_version(sw_version)
+            
+            # Determine version family
+            if sw_version >= 2.0:
+                detected_sw_version = SOFTWARE_VERSION_2
+            elif sw_version >= 1.0:
+                detected_sw_version = SOFTWARE_VERSION_1
+            else:
+                detected_sw_version = SOFTWARE_VERSION_UNKNOWN
             
             _LOGGER.info(
-                "Auto-detected MULTI_SW_VER: %s, firmware: %s",
+                \"Auto-detected software version: %.2f, family: %s\",
                 sw_version,
-                detected_firmware,
+                detected_sw_version,
             )
         except Exception as ex:
-            _LOGGER.warning("Could not auto-detect firmware version, using default: %s", ex)
+            _LOGGER.warning(\"Could not auto-detect software version: %s\", ex)
         
-        return detected_model, detected_firmware
+        # Try to read heater type
+        try:
+            heater_reg = get_register_definition(REG_HEATER_TYPE)
+            try:
+                result = client.read_holding_registers(
+                    heater_reg.address, 1, unit=data[CONF_SLAVE_ID]
+                )
+            except TypeError:
+                try:
+                    result = client.read_holding_registers(
+                        heater_reg.address, 1, slave=data[CONF_SLAVE_ID]
+                    )
+                except TypeError:
+                    _set_legacy_unit(client, data[CONF_SLAVE_ID])
+                    result = client.read_holding_registers(
+                        heater_reg.address, 1
+                    )
+            
+            # Extract heater type value
+            if hasattr(result, \"registers\"):
+                heater_type = result.registers[0]
+            elif isinstance(result, (list, tuple)):
+                heater_type = result[0]
+            else:
+                heater_type = result
+            
+            detected_heater_type = int(heater_type)
+            
+            heater_names = {
+                HEATER_TYPE_NONE: \"None\",
+                HEATER_TYPE_WATER: \"Water\",
+                HEATER_TYPE_ELECTRIC: \"Electric\",
+            }
+            
+            _LOGGER.info(
+                \"Auto-detected heater type: %s (%s)\",
+                detected_heater_type,
+                heater_names.get(detected_heater_type, \"Unknown\"),
+            )
+        except Exception as ex:
+            _LOGGER.warning(\"Could not auto-detect heater type: %s\", ex)
+        
+        return detected_sw_version, detected_heater_type
     
-    detected_model, detected_firmware = await hass.async_add_executor_job(_detect_model_and_firmware)
+    detected_sw_version, detected_heater_type = await hass.async_add_executor_job(_detect_device_info)
     
-    # Verify communication by reading a register with detected model
-    power_register = get_register_definition(detected_model, REG_POWER, detected_firmware)
+    # Verify communication by reading power register
+    power_register = get_register_definition(REG_POWER)
     
     # Try to read a register to verify communication
     def _read_test():
@@ -214,7 +224,11 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
     finally:
         client.close()
     
-    return {"title": data[CONF_NAME]}
+    return {
+        "title": data[CONF_NAME],
+        CONF_SOFTWARE_VERSION: detected_sw_version,
+        CONF_HEATER_TYPE: detected_heater_type,
+    }
 
 
 class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -224,8 +238,8 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         """Initialize the config flow."""
-
         self._integration_version: str | None = None
+        self._user_input: dict[str, Any] | None = None
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -249,6 +263,17 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             
             try:
                 info = await validate_connection(self.hass, user_input)
+                
+                # Store detected software version and heater type
+                user_input[CONF_SOFTWARE_VERSION] = info[CONF_SOFTWARE_VERSION]
+                user_input[CONF_HEATER_TYPE] = info[CONF_HEATER_TYPE]
+                
+                # If detection failed, ask user to select manually
+                if (info[CONF_SOFTWARE_VERSION] == SOFTWARE_VERSION_UNKNOWN or 
+                    info[CONF_HEATER_TYPE] == HEATER_TYPE_UNKNOWN):
+                    self._user_input = user_input
+                    return await self.async_step_manual_config()
+                
                 return self.async_create_entry(title=info["title"], data=user_input)
             except CannotConnect:
                 errors["base"] = "cannot_connect"
@@ -262,5 +287,49 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
             description_placeholders={
                 "version": self._integration_version or "unknown",
+            },
+        )
+
+    async def async_step_manual_config(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle manual configuration if auto-detection fails."""
+        if user_input is not None:
+            # Merge manual selections with stored connection data
+            self._user_input[CONF_SOFTWARE_VERSION] = user_input[CONF_SOFTWARE_VERSION]
+            self._user_input[CONF_HEATER_TYPE] = user_input[CONF_HEATER_TYPE]
+            
+            return self.async_create_entry(
+                title=self._user_input[CONF_NAME], 
+                data=self._user_input
+            )
+        
+        # Create schema with current values as defaults
+        manual_schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_SOFTWARE_VERSION,
+                    default=self._user_input.get(CONF_SOFTWARE_VERSION, SOFTWARE_VERSION_1)
+                ): vol.In({
+                    SOFTWARE_VERSION_1: "Version 1.x",
+                    SOFTWARE_VERSION_2: "Version 2.x",
+                }),
+                vol.Required(
+                    CONF_HEATER_TYPE,
+                    default=self._user_input.get(CONF_HEATER_TYPE, HEATER_TYPE_NONE)
+                ): vol.In({
+                    HEATER_TYPE_NONE: "None",
+                    HEATER_TYPE_WATER: "Water heater",
+                    HEATER_TYPE_ELECTRIC: "Electric heater",
+                }),
+            }
+        )
+        
+        return self.async_show_form(
+            step_id="manual_config",
+            data_schema=manual_schema,
+            description_placeholders={
+                "detected_sw": self._user_input.get(CONF_SOFTWARE_VERSION, "Unknown"),
+                "detected_heater": str(self._user_input.get(CONF_HEATER_TYPE, "Unknown")),
             },
         )

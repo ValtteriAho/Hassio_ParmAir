@@ -16,15 +16,21 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.config_entries import ConfigEntry
 
 from .const import (
+    CONF_HEATER_TYPE,
     CONF_SCAN_INTERVAL,
     CONF_SLAVE_ID,
+    CONF_SOFTWARE_VERSION,
     DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    HEATER_TYPE_UNKNOWN,
     POLLING_REGISTER_KEYS,
     REGISTERS,
+    SOFTWARE_VERSION_1,
+    SOFTWARE_VERSION_UNKNOWN,
     RegisterDefinition,
     get_register_definition,
+    get_registers_for_version,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -50,11 +56,18 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.host = entry.data[CONF_HOST]
         self.port = entry.data[CONF_PORT]
         self.slave_id = entry.data[CONF_SLAVE_ID]
+        self.software_version = entry.data.get(CONF_SOFTWARE_VERSION, SOFTWARE_VERSION_1)
+        self.heater_type = entry.data.get(CONF_HEATER_TYPE, HEATER_TYPE_UNKNOWN)
+        
         scan_interval = entry.data.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+        
+        # Get version-specific register map
+        self._registers = get_registers_for_version(self.software_version)
+        
         self._poll_registers: list[RegisterDefinition] = [
-            REGISTERS[key]
+            self._registers[key]
             for key in POLLING_REGISTER_KEYS
-            if key in REGISTERS
+            if key in self._registers
         ]
 
         self._client = ModbusTcpClient(host=self.host, port=self.port)
@@ -207,8 +220,7 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     def get_register_definition(self, key: str) -> RegisterDefinition:
         """Expose register metadata for other components."""
-
-        return get_register_definition(key)
+        return get_register_definition(key, self._registers)
 
     def _read_register_value(self, definition: RegisterDefinition) -> Any | None:
         """Read and scale a single register."""

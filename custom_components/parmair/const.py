@@ -10,11 +10,24 @@ DOMAIN = "parmair"
 # Configuration
 CONF_SLAVE_ID = "slave_id"
 CONF_SCAN_INTERVAL = "scan_interval"
+CONF_SOFTWARE_VERSION = "software_version"
+CONF_HEATER_TYPE = "heater_type"
 
 DEFAULT_NAME = "Parmair MAC"
 DEFAULT_SCAN_INTERVAL = 30  # seconds
 DEFAULT_PORT = 502
 DEFAULT_SLAVE_ID = 1
+
+# Software versions
+SOFTWARE_VERSION_1 = "1.x"
+SOFTWARE_VERSION_2 = "2.x"
+SOFTWARE_VERSION_UNKNOWN = "unknown"
+
+# Heater types (from HEAT_RADIATOR_TYPE register)
+HEATER_TYPE_NONE = 0
+HEATER_TYPE_WATER = 1
+HEATER_TYPE_ELECTRIC = 2
+HEATER_TYPE_UNKNOWN = -1
 
 
 @dataclass(frozen=True)
@@ -99,8 +112,11 @@ REG_FILTER_NEXT_MONTH = "filter_next_month"
 REG_FILTER_NEXT_YEAR = "filter_next_year"
 
 
-def _build_registers() -> Dict[str, RegisterDefinition]:
-    """Build the complete register map for Parmair MAC devices."""
+def _build_registers_v1() -> Dict[str, RegisterDefinition]:
+    """Build the complete register map for Parmair MAC devices with software version 1.xx.
+    
+    This is the current register map from the CSV documentation.
+    """
 
     return {
         REG_HARDWARE_TYPE: RegisterDefinition(REG_HARDWARE_TYPE, 1244, "VENT_MACHINE"),
@@ -249,8 +265,34 @@ def _build_registers() -> Dict[str, RegisterDefinition]:
     }
 
 
-# Build the complete register map
-REGISTERS = _build_registers()
+def _build_registers_v2() -> Dict[str, RegisterDefinition]:
+    """Build the complete register map for Parmair MAC devices with software version 2.xx.
+    
+    TODO: Placeholder for v2 register map. Will be updated with v2 addresses.
+    Currently returns v1 map as fallback.
+    """
+    # TODO: Update with v2 specific addresses when available
+    return _build_registers_v1()
+
+
+def get_registers_for_version(software_version: str) -> Dict[str, RegisterDefinition]:
+    """Get the appropriate register map based on software version.
+    
+    Args:
+        software_version: Software version string (e.g., "1.83", "2.10")
+    
+    Returns:
+        Dictionary mapping register keys to RegisterDefinition objects
+    """
+    if software_version.startswith("2."):
+        return _build_registers_v2()
+    else:
+        # Default to v1 for 1.xx or unknown versions
+        return _build_registers_v1()
+
+
+# Build the default register map (v1)
+REGISTERS = _build_registers_v1()
 
 # Ordered list of registers to poll on each update.
 POLLING_REGISTER_KEYS = (
@@ -301,18 +343,20 @@ POLLING_REGISTER_KEYS = (
 )
 
 
-def get_register_definition(key: str) -> RegisterDefinition:
+def get_register_definition(key: str, registers: Dict[str, RegisterDefinition] | None = None) -> RegisterDefinition:
     """Return the register definition for a given key.
     
     Args:
         key: Register key to look up
+        registers: Optional register map to use. If None, uses default REGISTERS.
     
     Returns:
         RegisterDefinition for the requested register
     """
-    if key not in REGISTERS:
+    reg_map = registers if registers is not None else REGISTERS
+    if key not in reg_map:
         raise KeyError(f"Register '{key}' not defined")
-    return REGISTERS[key]
+    return reg_map[key]
 
 
 # Operating modes for IV01_CONTROLSTATE
