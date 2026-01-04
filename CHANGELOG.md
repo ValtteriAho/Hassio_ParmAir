@@ -1,3 +1,17 @@
+## 0.6.5 - Transaction ID Fix (2026-01-04)
+
+### Fixed
+- Fixed pymodbus transaction ID mismatch errors (93+ occurrences)
+- Increased delay between register reads from 10ms to 20ms
+- Added 50ms stabilization delay after Modbus connection
+- Prevents "request ask for transaction_id=X but got id=Y" errors
+
+### Technical
+- Changed inter-register delay from `time.sleep(0.01)` to `time.sleep(0.02)`
+- Added `time.sleep(0.05)` after connection establishment
+- Allows device to stabilize before polling registers
+- Reduces transaction ID conflicts when polling 30+ registers
+
 ## 0.6.4 - Number Entity Bugfix (2026-01-04)
 
 ### Fixed
