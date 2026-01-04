@@ -107,6 +107,9 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         continue
                     data[definition.key] = value
                 
+                # Always include firmware version in data for sensors
+                data["firmware_version"] = self.firmware_version
+                
                 # Check if we need to update firmware version detection
                 if "software_version" in data and data["software_version"]:
                     detected_fw = detect_firmware_version(data["software_version"])

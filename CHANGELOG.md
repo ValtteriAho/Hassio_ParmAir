@@ -1,3 +1,8 @@
+## 0.3.4 - Firmware Version Sensor Fix (2026-01-04)
+
+### Fixed
+- Fixed firmware version sensor not displaying - now always includes firmware_version in coordinator data
+
 ## 0.3.3 - Bugfix Release (2026-01-04)
 
 ### Fixed
