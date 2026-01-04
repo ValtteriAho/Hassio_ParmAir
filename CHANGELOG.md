@@ -1,3 +1,17 @@
+## 0.5.0 - Device Info Enhancement (2026-01-04)
+
+### Changed
+- **Firmware Version**: Now reads actual firmware version from MULTI_FW_VER register (17/1017)
+- **Device Info**: Software version and firmware version now displayed in device information
+  - Software version shown in "Software version" field
+  - Firmware version shown in "Hardware version" field
+- **Firmware Family Sensor**: Renamed to "Firmware Version" and shows actual value from device (e.g., "1.87")
+
+### Technical
+- Added REG_FIRMWARE_VERSION register definition
+- Centralized device_info in coordinator for consistency
+- All entities now use coordinator.device_info property
+
 ## 0.4.1 - Diagnostic Entity Fix (2026-01-04)
 
 ### Fixed

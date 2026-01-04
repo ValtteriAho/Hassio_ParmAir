@@ -97,12 +97,7 @@ class ParmairRegisterEntity(CoordinatorEntity[ParmairCoordinator]):
         self._attr_name = name
         self._attr_unique_id = f"{entry.entry_id}_{data_key}"
         self._attr_has_entity_name = True
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": entry.data.get("name", DEFAULT_NAME),
-            "manufacturer": "Parmair",
-            "model": coordinator.model,
-        }
+        self._attr_device_info = coordinator.device_info
 
     @property
     def extra_state_attributes(self) -> dict[str, object]:
@@ -361,10 +356,10 @@ class ParmairSoftwareVersionSensor(ParmairRegisterEntity, SensorEntity):
 
 
 class ParmairFirmwareFamilySensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
-    """Representation of firmware family sensor."""
+    """Representation of firmware version sensor."""
 
     _attr_has_entity_name = True
-    _attr_name = "Firmware Family"
+    _attr_name = "Firmware Version"
     _attr_icon = "mdi:chip"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
@@ -376,17 +371,15 @@ class ParmairFirmwareFamilySensor(CoordinatorEntity[ParmairCoordinator], SensorE
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_firmware_family"
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": entry.data.get("name", DEFAULT_NAME),
-            "manufacturer": "Parmair",
-            "model": coordinator.model,
-        }
+        self._attr_device_info = coordinator.device_info
 
     @property
     def native_value(self) -> str | None:
-        """Return the firmware family."""
-        return self.coordinator.data.get("firmware_version", self.coordinator.firmware_version)
+        """Return the firmware version."""
+        fw_version = self.coordinator.data.get("firmware_version")
+        if fw_version is not None:
+            return f"{fw_version:.2f}"
+        return None
 
 
 class ParmairControlStateSensor(ParmairRegisterEntity, SensorEntity):

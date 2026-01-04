@@ -21,6 +21,7 @@ from .const import (
     CONF_SLAVE_ID,
     DEFAULT_FIRMWARE,
     DEFAULT_MODEL,
+    DEFAULT_NAME,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     POLLING_REGISTER_KEYS,
@@ -202,6 +203,27 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     self._client.close()
         
         await self.hass.async_add_executor_job(_close)
+
+    @property
+    def device_info(self) -> dict[str, Any]:
+        """Return device information."""
+        sw_version = self.data.get("software_version")
+        fw_version = self.data.get("firmware_version")
+        
+        device_info = {
+            "identifiers": {(DOMAIN, self.entry.entry_id)},
+            "name": self.entry.data.get("name", DEFAULT_NAME),
+            "manufacturer": "Parmair",
+            "model": self.model,
+        }
+        
+        if sw_version is not None:
+            device_info["sw_version"] = f"{sw_version:.2f}"
+        
+        if fw_version is not None:
+            device_info["hw_version"] = f"FW {fw_version:.2f}"
+        
+        return device_info
 
     def get_register_definition(self, key: str) -> RegisterDefinition:
         """Expose register metadata for other components."""

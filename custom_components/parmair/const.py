@@ -58,6 +58,7 @@ class RegisterDefinition:
 
 # Register keys
 REG_HARDWARE_TYPE = "hardware_type"
+REG_FIRMWARE_VERSION = "firmware_version"
 REG_SOFTWARE_VERSION = "software_version"
 REG_POWER = "power"
 REG_CONTROL_STATE = "control_state"
@@ -114,6 +115,7 @@ def _build_v1_registers() -> Dict[str, RegisterDefinition]:
 
     return {
         REG_HARDWARE_TYPE: RegisterDefinition(REG_HARDWARE_TYPE, 1244, "VENT_MACHINE"),
+        REG_FIRMWARE_VERSION: RegisterDefinition(REG_FIRMWARE_VERSION, 1017, "MULTI_FW_VER", scale=0.01),
         REG_SOFTWARE_VERSION: RegisterDefinition(REG_SOFTWARE_VERSION, 1018, "MULTI_SW_VER", scale=0.01),
         REG_POWER: RegisterDefinition(REG_POWER, 1208, "POWER_BTN_FI", writable=True),
         REG_CONTROL_STATE: RegisterDefinition(
@@ -273,6 +275,7 @@ SUPPORTED_FIRMWARES = tuple(FIRMWARE_REGISTER_MAP.keys())
 
 # Ordered list of registers to poll on each update.
 POLLING_REGISTER_KEYS = (
+    REG_FIRMWARE_VERSION,
     REG_SOFTWARE_VERSION,
     REG_POWER,
     REG_CONTROL_STATE,
