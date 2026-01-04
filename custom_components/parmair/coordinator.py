@@ -189,7 +189,6 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def device_info(self) -> dict[str, Any]:
         """Return device information."""
         sw_version = self.data.get("software_version")
-        fw_version = self.data.get("firmware_version")
         
         device_info = {
             "identifiers": {(DOMAIN, self.entry.entry_id)},
@@ -203,12 +202,6 @@ class ParmairCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 device_info["sw_version"] = f"{sw_version:.2f}"
             else:
                 device_info["sw_version"] = str(sw_version)
-        
-        if fw_version is not None:
-            if isinstance(fw_version, (int, float)):
-                device_info["hw_version"] = f"FW {fw_version:.2f}"
-            else:
-                device_info["hw_version"] = f"FW {fw_version}"
         
         return device_info
 

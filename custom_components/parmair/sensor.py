@@ -42,7 +42,6 @@ async def async_setup_entry(
     entities = [
         # System information
         ParmairSoftwareVersionSensor(coordinator, entry, "software_version", "Software Version"),
-        ParmairFirmwareFamilySensor(coordinator, entry),
         
         # Temperature sensors
         ParmairTemperatureSensor(coordinator, entry, "fresh_air_temp", "Fresh Air Temperature"),
@@ -355,35 +354,6 @@ class ParmairSoftwareVersionSensor(ParmairRegisterEntity, SensorEntity):
     def native_value(self) -> float | None:
         """Return the sensor value."""
         return self.coordinator.data.get(self._data_key)
-
-
-class ParmairFirmwareFamilySensor(CoordinatorEntity[ParmairCoordinator], SensorEntity):
-    """Representation of firmware version sensor."""
-
-    _attr_has_entity_name = True
-    _attr_name = "Firmware Version"
-    _attr_icon = "mdi:chip"
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-
-    def __init__(
-        self,
-        coordinator: ParmairCoordinator,
-        entry: ConfigEntry,
-    ) -> None:
-        """Initialize the sensor."""
-        super().__init__(coordinator)
-        self._attr_unique_id = f"{entry.entry_id}_firmware_family"
-        self._attr_device_info = coordinator.device_info
-
-    @property
-    def native_value(self) -> str | None:
-        """Return the firmware version."""
-        fw_version = self.coordinator.data.get("firmware_version")
-        if fw_version is not None:
-            if isinstance(fw_version, (int, float)):
-                return f"{fw_version:.2f}"
-            return str(fw_version)
-        return None
 
 
 class ParmairControlStateSensor(ParmairRegisterEntity, SensorEntity):

@@ -1,3 +1,21 @@
+## 0.6.8 - Remove Firmware Version (2026-01-04)
+
+### Removed
+- Removed firmware version sensor completely
+- Removed firmware version from device info section
+- Removed REG_FIRMWARE_VERSION register definition
+- Removed firmware version from polling list
+
+### Changed
+- Device info now displays only software version
+- Simplified device_info property in coordinator
+
+### Technical
+- Removed MULTI_FW_VER register (1017) from code
+- Removed ParmairFirmwareFamilySensor class
+- Removed fw_version references from coordinator.device_info
+- Reduced number of registers polled per cycle
+
 ## 0.6.7 - Coordinator Attribute Fix (2026-01-04)
 
 ### Fixed
