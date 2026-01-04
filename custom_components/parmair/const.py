@@ -75,6 +75,8 @@ REG_BOOST_SETTING = "boost_setting"
 REG_HOME_STATE = "home_state"
 REG_BOOST_STATE = "boost_state"
 REG_BOOST_TIMER = "boost_timer"
+REG_OVERPRESSURE_STATE = "overpressure_state"
+REG_OVERPRESSURE_TIMER = "overpressure_timer"
 REG_HUMIDITY = "humidity"
 REG_HUMIDITY_24H_AVG = "humidity_24h_avg"
 REG_CO2 = "co2"
@@ -157,7 +159,13 @@ def _build_v1_registers() -> Dict[str, RegisterDefinition]:
             REG_BOOST_STATE, 1201, "BOOST_STATE_FI"
         ),
         REG_BOOST_TIMER: RegisterDefinition(
-            REG_BOOST_TIMER, 1202, "BOOST_TIMER_FM"
+            REG_BOOST_TIMER, 1202, "BOOST_TIMER_FM", writable=True
+        ),
+        REG_OVERPRESSURE_STATE: RegisterDefinition(
+            REG_OVERPRESSURE_STATE, 1203, "OVERP_STATE_FI"
+        ),
+        REG_OVERPRESSURE_TIMER: RegisterDefinition(
+            REG_OVERPRESSURE_TIMER, 1204, "OVERP_TIMER_FM", writable=True
         ),
         REG_HUMIDITY: RegisterDefinition(
             REG_HUMIDITY, 1180, "MEXX_FM", optional=True
@@ -281,6 +289,8 @@ POLLING_REGISTER_KEYS = (
     REG_HOME_STATE,
     REG_BOOST_STATE,
     REG_BOOST_TIMER,
+    REG_OVERPRESSURE_STATE,
+    REG_OVERPRESSURE_TIMER,
     REG_HUMIDITY,
     REG_HUMIDITY_24H_AVG,
     REG_CO2,

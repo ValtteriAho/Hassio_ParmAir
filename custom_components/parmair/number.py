@@ -15,9 +15,11 @@ from .const import (
     DOMAIN,
     REG_AWAY_SPEED,
     REG_BOOST_SETTING,
+    REG_BOOST_TIMER,
     REG_EXHAUST_TEMP_SETPOINT,
     REG_FILTER_INTERVAL,
     REG_HOME_SPEED,
+    REG_OVERPRESSURE_TIMER,
     REG_SUMMER_MODE_TEMP_LIMIT,
     REG_SUPPLY_TEMP_SETPOINT,
 )
@@ -49,6 +51,12 @@ async def async_setup_entry(
         ),
         ParmairFilterIntervalNumber(
             coordinator, entry, REG_FILTER_INTERVAL, "Filter Change Interval"
+        ),
+        ParmairTimerNumber(
+            coordinator, entry, REG_BOOST_TIMER, "Boost Timer", "mdi:timer", "Set boost mode timer in minutes"
+        ),
+        ParmairTimerNumber(
+            coordinator, entry, REG_OVERPRESSURE_TIMER, "Overpressure Timer", "mdi:timer", "Set overpressure mode timer in minutes"
         ),
     ]
 
@@ -165,6 +173,29 @@ class ParmairFilterIntervalNumber(ParmairNumberEntity):
     ) -> None:
         """Initialize filter interval number."""
         super().__init__(coordinator, entry, data_key, name)
+
+
+class ParmairTimerNumber(ParmairNumberEntity):
+    """Number entity for boost/overpressure timers (minutes)."""
+
+    _attr_mode = NumberMode.SLIDER
+    _attr_native_min_value = 0
+    _attr_native_max_value = 300
+    _attr_native_step = 1
+    _attr_native_unit_of_measurement = "min"
+
+    def __init__(
+        self,
+        coordinator: ParmairCoordinator,
+        entry: ConfigEntry,
+        data_key: str,
+        name: str,
+        icon: str,
+        description: str,
+    ) -> None:
+        """Initialize timer number."""
+        super().__init__(coordinator, entry, data_key, name)
+        self._attr_icon = icon
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

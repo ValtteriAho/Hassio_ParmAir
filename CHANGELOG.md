@@ -1,3 +1,17 @@
+## 0.4.0 - Boost and Overpressure Controls (2026-01-04)
+
+### Added
+- **Boost Mode Switch**: Toggle boost ventilation mode (control state 3)
+- **Overpressure Mode Switch**: Toggle overpressure mode (control state 4)
+- **Boost Timer**: Number slider to set boost mode timer (0-300 minutes)
+- **Overpressure Timer**: Number slider to set overpressure mode timer (0-300 minutes)
+- Firmware version now displayed during installation alongside hardware model
+- Registers: BOOST_STATE_FI (1201), BOOST_TIMER_FM (1202, writable), OVERP_STATE_FI (1203), OVERP_TIMER_FM (1204, writable)
+
+### Changed
+- Config flow now shows detected firmware version during setup
+- Timer registers are now writable for direct timer control
+
 ## 0.3.4 - Firmware Version Sensor Fix (2026-01-04)
 
 ### Fixed

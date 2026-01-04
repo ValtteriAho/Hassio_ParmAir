@@ -276,5 +276,7 @@ class ParmairConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
             description_placeholders={
                 "version": self._integration_version or "unknown",
+                "model": info.get("model", "MAC") if user_input and not errors else "MAC",
+                "firmware": info.get("firmware_version", FIRMWARE_V1) if user_input and not errors else FIRMWARE_V1,
             },
         )

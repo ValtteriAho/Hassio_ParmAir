@@ -12,7 +12,10 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     DOMAIN,
+    REG_BOOST_STATE,
+    REG_CONTROL_STATE,
     REG_HEATER_ENABLE,
+    REG_OVERPRESSURE_STATE,
     REG_SUMMER_MODE,
     REG_TIME_PROGRAM_ENABLE,
 )
@@ -53,6 +56,20 @@ async def async_setup_entry(
             "Post Heater",
             "mdi:radiator",
             "Enables post-heating element",
+        ),
+        ParmairBoostSwitch(
+            coordinator,
+            entry,
+            "Boost Mode",
+            "mdi:fan-speed-3",
+            "Activates boost ventilation mode",
+        ),
+        ParmairOverpressureSwitch(
+            coordinator,
+            entry,
+            "Overpressure Mode",
+            "mdi:gauge",
+            "Activates overpressure mode",
         ),
     ]
 
@@ -104,4 +121,100 @@ class ParmairSwitch(CoordinatorEntity[ParmairCoordinator], SwitchEntity):
             await self.coordinator.async_request_refresh()
         except Exception as ex:
             _LOGGER.error("Failed to turn off %s: %s", self._data_key, ex)
+            raise
+
+
+class ParmairBoostSwitch(CoordinatorEntity[ParmairCoordinator], SwitchEntity):
+    """Representation of a Parmair boost mode switch."""
+
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        coordinator: ParmairCoordinator,
+        entry: ConfigEntry,
+        name: str,
+        icon: str,
+        description: str,
+    ) -> None:
+        """Initialize the switch."""
+        super().__init__(coordinator)
+        self._attr_name = name
+        self._attr_icon = icon
+        self._attr_unique_id = f"{entry.entry_id}_boost_mode"
+        self._attr_device_info = coordinator.device_info
+        self._attr_entity_registry_enabled_default = True
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return true if boost mode is active."""
+        # Check if control state is 3 (boost) or 7 (boost via time program)
+        control_state = self.coordinator.data.get(REG_CONTROL_STATE)
+        boost_state = self.coordinator.data.get(REG_BOOST_STATE)
+        return control_state in (3, 7) or boost_state == 1
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Activate boost mode."""
+        try:
+            await self.coordinator.async_write_register(REG_CONTROL_STATE, 3)
+            await self.coordinator.async_request_refresh()
+        except Exception as ex:
+            _LOGGER.error("Failed to activate boost mode: %s", ex)
+            raise
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Deactivate boost mode (return to home mode)."""
+        try:
+            await self.coordinator.async_write_register(REG_CONTROL_STATE, 2)
+            await self.coordinator.async_request_refresh()
+        except Exception as ex:
+            _LOGGER.error("Failed to deactivate boost mode: %s", ex)
+            raise
+
+
+class ParmairOverpressureSwitch(CoordinatorEntity[ParmairCoordinator], SwitchEntity):
+    """Representation of a Parmair overpressure mode switch."""
+
+    _attr_has_entity_name = True
+
+    def __init__(
+        self,
+        coordinator: ParmairCoordinator,
+        entry: ConfigEntry,
+        name: str,
+        icon: str,
+        description: str,
+    ) -> None:
+        """Initialize the switch."""
+        super().__init__(coordinator)
+        self._attr_name = name
+        self._attr_icon = icon
+        self._attr_unique_id = f"{entry.entry_id}_overpressure_mode"
+        self._attr_device_info = coordinator.device_info
+        self._attr_entity_registry_enabled_default = True
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return true if overpressure mode is active."""
+        # Check if control state is 4 (overpressure) or 8 (overpressure via time program)
+        control_state = self.coordinator.data.get(REG_CONTROL_STATE)
+        overp_state = self.coordinator.data.get(REG_OVERPRESSURE_STATE)
+        return control_state in (4, 8) or overp_state == 1
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Activate overpressure mode."""
+        try:
+            await self.coordinator.async_write_register(REG_CONTROL_STATE, 4)
+            await self.coordinator.async_request_refresh()
+        except Exception as ex:
+            _LOGGER.error("Failed to activate overpressure mode: %s", ex)
+            raise
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Deactivate overpressure mode (return to home mode)."""
+        try:
+            await self.coordinator.async_write_register(REG_CONTROL_STATE, 2)
+            await self.coordinator.async_request_refresh()
+        except Exception as ex:
+            _LOGGER.error("Failed to deactivate overpressure mode: %s", ex)
             raise
