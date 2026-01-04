@@ -1,3 +1,13 @@
+## 0.6.1 - Switch Display Fix (2026-01-04)
+
+### Fixed
+- Fixed Post Heater, Summer Mode, and Time Program switches displaying with dual icons instead of toggle switches
+- Added `SwitchDeviceClass.SWITCH` to all switch entities for proper UI rendering
+
+### Technical
+- Set `device_class = SwitchDeviceClass.SWITCH` on all switch entities
+- Ensures switches render as proper toggles in Home Assistant UI
+
 ## 0.6.0 - Simplified Architecture (2026-01-04)
 
 ### Changed

@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from homeassistant.components.switch import SwitchEntity
+from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -97,6 +97,7 @@ class ParmairSwitch(CoordinatorEntity[ParmairCoordinator], SwitchEntity):
         self._attr_icon = icon
         self._attr_unique_id = f"{entry.entry_id}_{data_key}"
         self._attr_device_info = coordinator.device_info
+        self._attr_device_class = SwitchDeviceClass.SWITCH
         self._attr_entity_registry_enabled_default = True
 
     @property
@@ -143,6 +144,7 @@ class ParmairBoostSwitch(CoordinatorEntity[ParmairCoordinator], SwitchEntity):
         self._attr_icon = icon
         self._attr_unique_id = f"{entry.entry_id}_boost_mode"
         self._attr_device_info = coordinator.device_info
+        self._attr_device_class = SwitchDeviceClass.SWITCH
         self._attr_entity_registry_enabled_default = True
 
     @property
@@ -191,6 +193,7 @@ class ParmairOverpressureSwitch(CoordinatorEntity[ParmairCoordinator], SwitchEnt
         self._attr_icon = icon
         self._attr_unique_id = f"{entry.entry_id}_overpressure_mode"
         self._attr_device_info = coordinator.device_info
+        self._attr_device_class = SwitchDeviceClass.SWITCH
         self._attr_entity_registry_enabled_default = True
 
     @property
