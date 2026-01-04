@@ -1,3 +1,13 @@
+## 0.6.6 - Manifest JSON Fix (2026-01-04)
+
+### Fixed
+- Fixed JSON syntax error in manifest.json (trailing comma after version)
+- Resolves "Failed to perform the action update/install. trailing comma is not allowed" error
+
+### Technical
+- Removed invalid trailing comma after version field in manifest.json
+- No functional changes - only manifest syntax correction
+
 ## 0.6.5 - Transaction ID Fix (2026-01-04)
 
 ### Fixed
