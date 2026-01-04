@@ -1,3 +1,16 @@
+## 0.7.2.1 - Fix Optional Sensor ValueError (2026-01-04)
+
+### Fixed
+- Fixed ValueError when optional sensors (CO2, humidity) are not installed
+- Changed return value from "Not Installed"/"Not Available" strings to `None`
+- Added dynamic state_class property that returns `None` when sensor not present
+- Resolves: "could not convert string to float: 'Not Installed'" error
+
+### Technical
+- Optional sensors now properly return `None` instead of error strings
+- state_class dynamically set to `None` when hardware not detected
+- Prevents numeric sensor errors when optional hardware missing
+
 ## 0.7.2 - Display Timer Remaining Time (2026-01-04)
 
 ### Added

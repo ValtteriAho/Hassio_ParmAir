@@ -156,12 +156,12 @@ class ParmairHumiditySensor(ParmairRegisterEntity, SensorEntity):
         super().__init__(coordinator, entry, data_key, name)
 
     @property
-    def native_value(self) -> int | str | None:
+    def native_value(self) -> int | None:
         """Return the sensor value."""
         value = self.coordinator.data.get(self._data_key)
         # 0 or 65535 (0xFFFF) or -1 indicates sensor not installed
         if value in (0, 65535, -1, None):
-            return "Not Installed"
+            return None
         return value
 
     @property
@@ -171,6 +171,14 @@ class ParmairHumiditySensor(ParmairRegisterEntity, SensorEntity):
         if value in (0, 65535, -1, None):
             return None
         return SensorDeviceClass.HUMIDITY
+
+    @property
+    def state_class(self) -> str | None:
+        """Return state class only if sensor is installed."""
+        value = self.coordinator.data.get(self._data_key)
+        if value in (0, 65535, -1, None):
+            return None
+        return SensorStateClass.MEASUREMENT
 
 
 class ParmairHumidity24hAvgSensor(ParmairRegisterEntity, SensorEntity):
@@ -191,12 +199,12 @@ class ParmairHumidity24hAvgSensor(ParmairRegisterEntity, SensorEntity):
         super().__init__(coordinator, entry, data_key, name)
 
     @property
-    def native_value(self) -> float | str | None:
+    def native_value(self) -> float | None:
         """Return the sensor value."""
         value = self.coordinator.data.get(self._data_key)
         # -1 or None indicates sensor not available
         if value in (-1, None) or value < 0:
-            return "Not Available"
+            return None
         return value
 
     @property
@@ -205,6 +213,15 @@ class ParmairHumidity24hAvgSensor(ParmairRegisterEntity, SensorEntity):
         value = self.coordinator.data.get(self._data_key)
         if value in (-1, None) or value < 0:
             return None
+        return SensorDeviceClass.HUMIDITY
+
+    @property
+    def state_class(self) -> str | None:
+        """Return state class only if sensor has valid data."""
+        value = self.coordinator.data.get(self._data_key)
+        if value in (-1, None) or value < 0:
+            return None
+        return SensorStateClass.MEASUREMENT
         return SensorDeviceClass.HUMIDITY
 
 
@@ -226,12 +243,12 @@ class ParmairCO2Sensor(ParmairRegisterEntity, SensorEntity):
         super().__init__(coordinator, entry, data_key, name)
 
     @property
-    def native_value(self) -> int | str | None:
+    def native_value(self) -> int | None:
         """Return the sensor value."""
         value = self.coordinator.data.get(self._data_key)
         # 0 or 65535 (0xFFFF) or -1 indicates sensor not installed
         if value in (0, 65535, -1, None):
-            return "Not Installed"
+            return None
         return value
 
     @property
@@ -241,6 +258,14 @@ class ParmairCO2Sensor(ParmairRegisterEntity, SensorEntity):
         if value in (0, 65535, -1, None):
             return None
         return SensorDeviceClass.CO2
+
+    @property
+    def state_class(self) -> str | None:
+        """Return state class only if sensor is installed."""
+        value = self.coordinator.data.get(self._data_key)
+        if value in (0, 65535, -1, None):
+            return None
+        return SensorStateClass.MEASUREMENT
 
 
 class ParmairStateSensor(ParmairRegisterEntity, SensorEntity):
