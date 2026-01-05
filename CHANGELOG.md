@@ -1,3 +1,19 @@
+## 0.7.5.1 - Remove Heater Type Control (2026-01-05)
+
+### Removed
+- **Heater Type select control** - Removed ability to change heater type via UI
+- Heater type is a hardware configuration and should not be changed during runtime
+
+### Kept
+- **Heater Type diagnostic sensor** - Still shows current heater configuration (read-only)
+- Sensor continues to display Water/Electric/None from register 1240
+
+### Technical
+- Removed ParmairHeaterTypeSelect class from select.py
+- Removed REG_HEATER_TYPE from select platform imports
+- Select platform now returns empty entity list
+- Heater type remains in polling registers for sensor display
+
 ## 0.7.5 - Add Heater Type Sensor and Fix Values (2026-01-05)
 
 ### Added
