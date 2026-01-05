@@ -1,3 +1,14 @@
+## 0.8.1 - Timer Minimum Value Fix (2026-01-05)
+
+### Fixed
+- Fixed boost and overpressure timer minimum value from 0 to -1
+- Timers now correctly display -1 when inactive (per Modbus register specification)
+- Allows proper display of timer state: -1 = inactive/not running, 0+ = active with remaining minutes
+
+### Technical
+- Updated ParmairTimerNumber class minimum value to match BOOST_TIMER_FM and OVERP_TIMER_FM register specs
+- Modbus registers define valid range: -1 to 300 minutes
+
 ## 0.8.0 - Device Info Label Clarification (2026-01-05)
 
 ### Changed

@@ -218,7 +218,7 @@ class ParmairTimerNumber(ParmairNumberEntity):
     """Number entity for boost/overpressure timers (minutes)."""
 
     _attr_mode = NumberMode.SLIDER
-    _attr_native_min_value = 0
+    _attr_native_min_value = -1
     _attr_native_max_value = 300
     _attr_native_step = 1
     _attr_native_unit_of_measurement = "min"
