@@ -1,4 +1,4 @@
-# Parmair MAC - Home Assistant Integration v0.8.1
+# Parmair MAC - Home Assistant Integration v0.9.0
 
 ![Parmair MAC Logo](parmair_logo.jpg)
 
@@ -46,7 +46,7 @@ A custom Home Assistant integration for Parmair MAC ventilation systems via Modb
 
 This integration supports Parmair "My Air Control" systems:
 - **Firmware 1.x**: Fully supported (Modbus spec 1.87)
-- **Firmware 2.x**: Infrastructure ready (register mappings will be added when specification available)
+- **Firmware 2.x**: Fully supported (Modbus spec 2.28) with +1000 address offset
 
 ## Installation
 
@@ -156,84 +156,36 @@ For issues, feature requests, or questions, please open an issue on GitHub.
 
 ## Release Notes
 
-### 0.2.5
-- **CRITICAL FIX**: Negative temperature handling - temperatures below 0°C now display correctly
-- **Human-Readable States**: All state sensors now show meaningful text (Home/Away, On/Off, etc.)
-- **Missing Hardware**: CO2/Humidity sensors display "Not Installed" when hardware is absent
-- **Software Version**: Corrected register address for proper firmware version display
+### 0.9.0
+- **Full Firmware 2.xx Support**: Complete Modbus register mappings for firmware 2.28
+- **Automatic Version Detection**: Seamless switching between 1.xx and 2.xx register maps
+- **Address Offset Handling**: Firmware 2.xx uses Register ID + 1000 addressing scheme
+- **Control Compatibility**: Different control registers for 2.xx (UNIT_CONTROL_FO, USERSTATECONTROL_FO)
+- **All Features Working**: Sensors, controls, switches, numbers, and buttons fully functional on both firmware versions
 
-### 0.2.4
-- **Software Version Sensor**: Monitor Multi24 firmware application version
-- **Diagnostic Entity**: Automatically polled firmware version display (e.g., 2.00)
-- **System Monitoring**: Helps identify firmware-related issues and compatibility
+### 0.8.1
+- **Timer Fix**: Fixed boost and overpressure timer minimum value from 0 to -1
+- **Inactive Display**: Timers now correctly show -1 when inactive per Modbus specification
 
-### 0.2.3
-- **Button Platform**: Acknowledge Alarms, Filter Replaced buttons
-- **Select Platform**: Heater Type selector (Water/Electric)
-- **Number Controls**: Summer Mode Temperature Limit, Filter Change Interval
-- **Sensor Monitoring**: Heat Recovery Efficiency, Overpressure Timer, Defrost State, Supply/Exhaust Fan Speeds, Filter Status
-- **Extended Polling**: 6 additional registers for enhanced monitoring
+### 0.8.0
+- **Device Info**: Clarified software version display in device information
+- **Label Consistency**: Home Assistant controls display label (Firmware/Software)
 
-### 0.2.2
-- **Fixed Missing Sensor**: Added TE05_M temperature sensor.
-- **Supply Air Temperature (After Recovery)**: Now properly monitored alongside other temperature sensors.
-- **Complete Temperature Monitoring**: All 5 measurement sensors now present (registers 20, 22, 23, 24, 25).
+### 0.7.7.3
+- **Syntax Fix**: Corrected indentation in heater type detection retry logic
 
-### 0.2.1
-- **Configurable Polling Interval**: Added polling interval configuration (5-300 seconds, default 30).
-- **Improved Model Detection**: VENT_MACHINE register value directly maps to model (80→MAC80, 100→MAC100, 150→MAC150).
-- **MAC100 Support**: Added MAC100 model to register map.
-- **Fixed Default Name**: Changed from "Parmair Ventilation" to "Parmair MAC".
-- **Fixed Register ID Calculation**: Corrected formula to properly calculate register addresses.
-- **Translations**: Added Finnish/English translations for polling interval field.
+### 0.7.7.2
+- **Documentation Cleanup**: Removed Modbus register addresses from public documentation
 
-### 0.2.0
-- **Number Platform**: Added 5 controllable entities for fan speed presets and temperature setpoints.
-- **Switch Platform**: Added 3 toggle entities for Summer Mode, Time Program Enable, and Heater Enable.
-- **Finnish Translation**: Complete localization support (fi.json).
-- **Write Capability**: Full read/write control via coordinator.async_write_register().
-- **HACS Metadata**: Updated with number and switch domains.
+### 0.7.7.1
+- **Current Speed**: Speed sensor now shows numeric values (0-5) instead of text
 
-### 0.1.9
-- **CRITICAL**: Fix transaction ID mismatch errors with threading lock (resolves sensor data loss).
-- Automatic hardware model detection via VENT_MACHINE register.
-- Always create all sensors (show unavailable if hardware missing).
-- Enhanced diagnostic logging for troubleshooting.
+### 0.7.7
+- **Auto-Detection**: Retry logic with up to 3 attempts for version/heater detection
+- **Smart Defaults**: Uses sensible defaults if detection fails
 
-### 0.1.8
-- Add `device_id` keyword argument as additional Modbus fallback for pre-2.0 era pymodbus builds.
-- Enhanced compatibility chain: `unit` → `slave` → `device_id` → attribute assignment → positional.
-
-### 0.1.7
-- Retry Modbus reads without a count parameter to cover extremely old pymodbus clients.
-- Handle legacy read responses that do not include a `registers` attribute.
-
-### 0.1.6
-- Assign slave/unit ids via client attributes before retrying Modbus operations to support very old pymodbus clients without keyword arguments.
-- Handle legacy responses lacking `isError()` gracefully during polling.
-
-### 0.1.5
-- Add a final positional Modbus fallback to keep legacy pymodbus deployments working during setup and polling.
-
-### 0.1.4
-- Fix config flow connection tests against pymodbus builds that still require the `slave` keyword.
-- Apply the same compatibility fallback to runtime reads and writes so older libraries keep working.
-
-### 0.1.3
-- Model selector in the config flow with placeholder support for MAC150.
-- Register metadata exposed via entity attributes for easier troubleshooting.
-- Coordinator read/write logic now uses register definitions for scaling.
-
-### 0.1.2
-- Fixed handler registration for Home Assistant 2025.12 config flow loader.
-- Dropped classified documentation references from README and register map.
-
-### 0.1.1
-- Bundled translations and dependency adjustments for Home Assistant 2025.12.
-- Resolved config flow errors related to pymodbus 3.11 compatibility.
-
-### 0.1.0
-- Initial public release with fan control, temperature monitoring, and optional humidity/CO2 sensors.
+### 0.7.6
+- **Real Speed**: Speed sensor now shows actual running speed instead of control setting
 
 ## License
 

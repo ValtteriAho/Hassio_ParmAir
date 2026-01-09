@@ -1,3 +1,48 @@
+## 0.9.0 - Full Firmware 2.xx Support (2026-01-09)
+
+### Added
+- **Complete Firmware 2.xx Register Mappings**: Full support for Modbus specification 2.28
+  - All 648 registers documented and mapped
+  - Proper +1000 address offset (Register ID 20 → Address 1020)
+  - Control registers: UNIT_CONTROL_FO (1180), USERSTATECONTROL_FO (1181)
+  - All temperature, humidity, CO2, and state sensors working
+- **Automatic Firmware Detection**: Seamlessly switches between 1.xx and 2.xx register maps
+  - Reads MULTI_SW_VER register to detect firmware version
+  - Loads appropriate register map automatically
+  - No user configuration needed
+- **Version-Specific Register Maps**: Separate register definitions for each firmware family
+  - `_build_registers_v1()`: Firmware 1.xx with standard addressing
+  - `_build_registers_v2()`: Firmware 2.xx with +1000 offset
+  - `get_registers_for_version()`: Dynamic register map selection
+
+### Changed
+- **Control Architecture**: Firmware 2.xx uses different control scheme
+  - Power control: UNIT_CONTROL_FO instead of POWER_BTN_FI
+  - State control: USERSTATECONTROL_FO instead of IV01_CONTROLSTATE_FO
+  - All existing entities continue to work with both firmware versions
+- **Address Calculation**: Implemented proper +1000 offset for firmware 2.xx
+  - Example: Fresh air temp Register ID 20 → Address 1020 (v2.xx) vs 1020 (v1.xx)
+  - Temperature setpoint Register ID 73 → Address 1073 (v2.xx)
+  - All 70+ registers properly mapped with correct offsets
+
+### Technical
+- Added comprehensive register documentation (MODBUS_REGISTERS_2XX.md)
+- Updated RegisterDefinition.register_id property to support address calculation
+- Coordinator uses version-specific register maps from const.py
+- All platforms (sensor, switch, number, button, select) work with both firmware versions
+- Maintained backward compatibility with firmware 1.xx systems
+
+### Documentation
+- Created detailed Modbus 2.xx specification document
+- Documented all register groups, addressing, and scaling factors
+- Included implementation notes and quick reference guide
+- Added to .gitignore to protect proprietary information
+
+### Compatibility
+- Firmware 1.xx: No changes, continues to work as before
+- Firmware 2.xx: Full support with all features enabled
+- Automatic detection prevents manual configuration
+
 ## 0.8.1 - Timer Minimum Value Fix (2026-01-05)
 
 ### Fixed
