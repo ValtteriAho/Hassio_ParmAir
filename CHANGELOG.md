@@ -1,3 +1,20 @@
+## 0.9.0.1 - Critical Autodetection Bugfix (2026-01-11)
+
+### Fixed
+- **Critical: Firmware 2.xx Autodetection Fixed**: Devices with firmware 2.xx can now be detected during initial setup
+  - Software version register: firmware 2.xx uses address 1015, firmware 1.xx uses address 1018
+  - Heater type register: firmware 2.xx uses address 1127, firmware 1.xx uses address 1240
+  - Autodetection now tries both address sets and uses the one that responds correctly
+  - Detects which firmware is running based on which address returns valid data (1.00-2.99 version range)
+  - Heater type detection uses the correct address based on detected firmware version
+- **Improved Logging**: Better debug messages showing which addresses are being tried and which firmware version was detected
+
+### Technical
+- Modified `_detect_device_info()` in config_flow.py to try both firmware address sets
+- Validates software version range (1.00-2.99) to ensure valid readings
+- Validates heater type values (0=Water, 1=Electric, 2=None) to ensure valid readings
+- Tracks which firmware registers worked and uses matching addresses for subsequent reads
+
 ## 0.9.0 - Full Firmware 2.xx Support (2026-01-09)
 
 ### Added

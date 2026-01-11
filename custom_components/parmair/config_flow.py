@@ -92,47 +92,49 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
         """Detect software version and heater type from device with retries."""
         detected_sw_version = SOFTWARE_VERSION_UNKNOWN
         detected_heater_type = HEATER_TYPE_UNKNOWN
+        detected_firmware_registers = None  # Track which address set worked
         
-        # Try detection multiple times with increasing delays
-        for attempt in range(3):
-            if attempt > 0:
-                # Wait longer between retries
-                delay = 0.2 * attempt  # 0.2s, 0.4s
-                _LOGGER.info("Retrying detection (attempt %d/3) after %.1fs delay", attempt + 1, delay)
-                time.sleep(delay)
-            else:
-                # Initial delay after connection
-                time.sleep(0.15)
-            
-            # Try to read software version
+        # Initial delay after connection
+        time.sleep(0.15)
+        
+        # Software version register addresses for different firmware versions
+        # Firmware 1.xx uses address 1018, Firmware 2.xx uses address 1015
+        sw_addresses = [
+            (1015, "2.xx"),  # Try firmware 2.xx first (address 1015)
+            (1018, "1.xx"),  # Then try firmware 1.xx (address 1018)
+        ]
+        
+        # Try both address sets to detect which firmware version
+        for sw_address, fw_label in sw_addresses:
             try:
-                sw_reg = get_register_definition(REG_SOFTWARE_VERSION)
+                _LOGGER.debug("Trying software version detection with address %d (firmware %s)", sw_address, fw_label)
+                
                 try:
                     # Try modern pymodbus with keyword arguments
                     result = client.read_holding_registers(
-                        address=sw_reg.address, count=1, slave=data[CONF_SLAVE_ID]
+                        address=sw_address, count=1, slave=data[CONF_SLAVE_ID]
                     )
                 except TypeError:
                     try:
                         # Try with 'unit' instead of 'slave'
                         result = client.read_holding_registers(
-                            address=sw_reg.address, count=1, unit=data[CONF_SLAVE_ID]
+                            address=sw_address, count=1, unit=data[CONF_SLAVE_ID]
                         )
                     except TypeError:
                         # Try older versions with positional + keyword
                         try:
                             result = client.read_holding_registers(
-                                sw_reg.address, 1, unit=data[CONF_SLAVE_ID]
+                                sw_address, 1, unit=data[CONF_SLAVE_ID]
                             )
                         except TypeError:
                             try:
                                 result = client.read_holding_registers(
-                                    sw_reg.address, 1, slave=data[CONF_SLAVE_ID]
+                                    sw_address, 1, slave=data[CONF_SLAVE_ID]
                                 )
                             except TypeError:
                                 _set_legacy_unit(client, data[CONF_SLAVE_ID])
                                 result = client.read_holding_registers(
-                                    sw_reg.address, 1
+                                    sw_address, 1
                                 )
                 
                 # Check if read was successful
@@ -145,63 +147,82 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
                     else:
                         raw_sw = result
                     
-                    sw_version = raw_sw * sw_reg.scale
-                    
-                    # Determine version family
-                    if sw_version >= 2.0:
-                        detected_sw_version = SOFTWARE_VERSION_2
-                    elif sw_version >= 1.0:
-                        detected_sw_version = SOFTWARE_VERSION_1
+                    # Validate the reading is reasonable (not 0 or 65535/error values)
+                    if raw_sw > 0 and raw_sw < 10000:
+                        sw_version = raw_sw * 0.01  # Scale factor for software version
+                        
+                        # Determine version family
+                        if sw_version >= 2.0:
+                            detected_sw_version = SOFTWARE_VERSION_2
+                            detected_firmware_registers = "2.xx"
+                        elif sw_version >= 1.0:
+                            detected_sw_version = SOFTWARE_VERSION_1
+                            detected_firmware_registers = "1.xx"
+                        
+                        if detected_sw_version != SOFTWARE_VERSION_UNKNOWN:
+                            _LOGGER.info(
+                                "Auto-detected software version: %.2f from address %d (firmware %s)",
+                                sw_version,
+                                sw_address,
+                                fw_label,
+                            )
+                            break  # Success, exit address loop
                     else:
-                        detected_sw_version = SOFTWARE_VERSION_UNKNOWN
-                    
-                    if detected_sw_version != SOFTWARE_VERSION_UNKNOWN:
-                        _LOGGER.info(
-                            "Auto-detected software version: %.2f, family: %s (attempt %d/3)",
-                            sw_version,
-                            detected_sw_version,
-                            attempt + 1,
-                        )
-                        break  # Success, exit retry loop
+                        _LOGGER.debug("Address %d returned invalid value: %d", sw_address, raw_sw)
                 else:
-                    _LOGGER.debug("Attempt %d/3: Failed to read software version - invalid response", attempt + 1)
+                    _LOGGER.debug("Address %d: Failed to read - invalid response", sw_address)
             except Exception as ex:
-                _LOGGER.debug("Attempt %d/3: Could not auto-detect software version: %s", attempt + 1, ex)
+                _LOGGER.debug("Address %d: Could not read software version: %s", sw_address, ex)
         
-        # Try to read heater type with same retry logic
-        for attempt in range(3):
-            if attempt > 0:
-                delay = 0.1 * attempt
-                time.sleep(delay)
-            
+        # If software version was not detected, default to 1.xx
+        if detected_sw_version == SOFTWARE_VERSION_UNKNOWN:
+            _LOGGER.warning(
+                "Could not auto-detect software version from any address, defaulting to firmware %s",
+                SOFTWARE_VERSION_1,
+            )
+            detected_sw_version = SOFTWARE_VERSION_1
+            detected_firmware_registers = "1.xx"
+        
+        # Now detect heater type using the correct address for detected firmware
+        heater_addresses = []
+        if detected_firmware_registers == "2.xx":
+            # Firmware 2.xx: heater type at address 1127
+            heater_addresses = [(1127, "2.xx")]
+        else:
+            # Firmware 1.xx: heater type at address 1240
+            heater_addresses = [(1240, "1.xx")]
+        
+        # Try to read heater type from the correct address
+        for heater_address, fw_label in heater_addresses:
             try:
-                heater_reg = get_register_definition(REG_HEATER_TYPE)
+                _LOGGER.debug("Trying heater type detection with address %d (firmware %s)", heater_address, fw_label)
+                
                 try:
                     # Try modern pymodbus with keyword arguments
                     result = client.read_holding_registers(
-                        address=heater_reg.address, count=1, slave=data[CONF_SLAVE_ID]
+                        address=heater_address, count=1, slave=data[CONF_SLAVE_ID]
                     )
                 except TypeError:
                     try:
                         # Try with 'unit' instead of 'slave'
                         result = client.read_holding_registers(
-                            address=heater_reg.address, count=1, unit=data[CONF_SLAVE_ID]
+                            address=heater_address, count=1, unit=data[CONF_SLAVE_ID]
                         )
                     except TypeError:
                         # Try older versions with positional + keyword
                         try:
                             result = client.read_holding_registers(
-                                heater_reg.address, 1, unit=data[CONF_SLAVE_ID]
+                                heater_address, 1, unit=data[CONF_SLAVE_ID]
                             )
                         except TypeError:
                             try:
                                 result = client.read_holding_registers(
-                                    heater_reg.address, 1, slave=data[CONF_SLAVE_ID]
+                                    heater_address, 1, slave=data[CONF_SLAVE_ID]
                                 )
                             except TypeError:
                                 _set_legacy_unit(client, data[CONF_SLAVE_ID])
                                 result = client.read_holding_registers(
-                                    heater_reg.address, 1
+                                    heater_address, 1
                                 )
                 
                 # Check if read was successful
@@ -214,33 +235,32 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
                     else:
                         heater_type = result
                     
-                    detected_heater_type = int(heater_type)
-                    
-                    heater_names = {
-                        HEATER_TYPE_NONE: "None",
-                        HEATER_TYPE_WATER: "Water",
-                        HEATER_TYPE_ELECTRIC: "Electric",
-                    }
-                    
-                    _LOGGER.info(
-                        "Auto-detected heater type: %s (%s) (attempt %d/3)",
-                        detected_heater_type,
-                        heater_names.get(detected_heater_type, "Unknown"),
-                        attempt + 1,
-                    )
-                    break  # Success, exit retry loop
+                    # Validate heater type (0=Water, 1=Electric, 2=None)
+                    if heater_type in [0, 1, 2]:
+                        detected_heater_type = int(heater_type)
+                        
+                        heater_names = {
+                            HEATER_TYPE_NONE: "None",
+                            HEATER_TYPE_WATER: "Water",
+                            HEATER_TYPE_ELECTRIC: "Electric",
+                        }
+                        
+                        _LOGGER.info(
+                            "Auto-detected heater type: %s (%s) from address %d (firmware %s)",
+                            detected_heater_type,
+                            heater_names.get(detected_heater_type, "Unknown"),
+                            heater_address,
+                            fw_label,
+                        )
+                        break  # Success, exit address loop
+                    else:
+                        _LOGGER.debug("Address %d returned invalid heater type: %d", heater_address, heater_type)
                 else:
-                    _LOGGER.debug("Attempt %d/3: Failed to read heater type - invalid response", attempt + 1)
+                    _LOGGER.debug("Address %d: Failed to read heater type - invalid response", heater_address)
             except Exception as ex:
-                _LOGGER.debug("Attempt %d/3: Could not auto-detect heater type: %s", attempt + 1, ex)
+                _LOGGER.debug("Address %d: Could not read heater type: %s", heater_address, ex)
         
-        # Use defaults if detection failed after all retries
-        if detected_sw_version == SOFTWARE_VERSION_UNKNOWN:
-            detected_sw_version = SOFTWARE_VERSION_1
-            _LOGGER.warning(
-                "Auto-detection failed after 3 attempts, defaulting to software version 1.x"
-            )
-        
+        # Use defaults if detection failed
         if detected_heater_type == HEATER_TYPE_UNKNOWN:
             detected_heater_type = HEATER_TYPE_NONE
             _LOGGER.warning(
