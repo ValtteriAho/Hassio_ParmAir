@@ -2,45 +2,42 @@
 
 ### Fixed
 - **Critical: Firmware 2.xx Autodetection Fixed**: Devices with firmware 2.xx can now be detected during initial setup
-  - Software version register: firmware 2.xx uses address 1015, firmware 1.xx uses address 1018
-  - Heater type register: firmware 2.xx uses address 1127, firmware 1.xx uses address 1240
-  - Autodetection now tries both address sets and uses the one that responds correctly
-  - Detects which firmware is running based on which address returns valid data (1.00-2.99 version range)
-  - Heater type detection uses the correct address based on detected firmware version
-- **Improved Logging**: Better debug messages showing which addresses are being tried and which firmware version was detected
+  - Firmware 2.xx and 1.xx use different register locations for software version and heater type
+  - Autodetection now tries both firmware register sets and uses the one that responds correctly
+  - Detects which firmware is running based on which register set returns valid data (1.00-2.99 version range)
+  - Heater type detection uses the correct register set based on detected firmware version
+- **Improved Logging**: Better debug messages showing which firmware version was detected
 
 ### Technical
-- Modified `_detect_device_info()` in config_flow.py to try both firmware address sets
+- Modified `_detect_device_info()` in config_flow.py to try both firmware register sets
 - Validates software version range (1.00-2.99) to ensure valid readings
 - Validates heater type values (0=Water, 1=Electric, 2=None) to ensure valid readings
-- Tracks which firmware registers worked and uses matching addresses for subsequent reads
+- Tracks which firmware registers worked and uses matching register set for subsequent reads
 
 ## 0.9.0 - Full Firmware 2.xx Support (2026-01-09)
 
 ### Added
 - **Complete Firmware 2.xx Register Mappings**: Full support for Modbus specification 2.28
   - All 648 registers documented and mapped
-  - Proper +1000 address offset (Register ID 20 → Address 1020)
-  - Control registers: UNIT_CONTROL_FO (1180), USERSTATECONTROL_FO (1181)
+  - Proper firmware 2.xx addressing scheme with register offset
+  - Enhanced control registers for firmware 2.xx
   - All temperature, humidity, CO2, and state sensors working
 - **Automatic Firmware Detection**: Seamlessly switches between 1.xx and 2.xx register maps
-  - Reads MULTI_SW_VER register to detect firmware version
+  - Reads software version register to detect firmware version
   - Loads appropriate register map automatically
   - No user configuration needed
 - **Version-Specific Register Maps**: Separate register definitions for each firmware family
   - `_build_registers_v1()`: Firmware 1.xx with standard addressing
-  - `_build_registers_v2()`: Firmware 2.xx with +1000 offset
+  - `_build_registers_v2()`: Firmware 2.xx with offset addressing
   - `get_registers_for_version()`: Dynamic register map selection
 
 ### Changed
 - **Control Architecture**: Firmware 2.xx uses different control scheme
-  - Power control: UNIT_CONTROL_FO instead of POWER_BTN_FI
-  - State control: USERSTATECONTROL_FO instead of IV01_CONTROLSTATE_FO
+  - Enhanced power control registers
+  - Updated state control registers
   - All existing entities continue to work with both firmware versions
-- **Address Calculation**: Implemented proper +1000 offset for firmware 2.xx
-  - Example: Fresh air temp Register ID 20 → Address 1020 (v2.xx) vs 1020 (v1.xx)
-  - Temperature setpoint Register ID 73 → Address 1073 (v2.xx)
-  - All 70+ registers properly mapped with correct offsets
+- **Address Calculation**: Implemented proper offset for firmware 2.xx
+  - All 70+ registers properly mapped with correct firmware-specific addressing
 
 ### Technical
 - Added comprehensive register documentation (MODBUS_REGISTERS_2XX.md)
