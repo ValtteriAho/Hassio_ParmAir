@@ -3,11 +3,11 @@
 ### Fixed
 - **Enhanced Firmware Detection**: Improved reliability with two-register consensus validation
   - Now validates both SOFTWARE_VERSION and VENT_MACHINE registers for firmware identification
-  - Firmware 2.xx confirmed by reading version (2.00-2.99) at address 1015 AND machine type (80/100/105/150) at address 1125
-  - Firmware 1.xx confirmed by reading version (1.00-1.99) at address 1018 AND machine type (80/100/105/150) at address 1244
+  - Firmware 2.xx confirmed by reading firmware-specific version register (2.00-2.99 range) AND machine type register (MAC80/100/105/150)
+  - Firmware 1.xx confirmed by reading firmware-specific version register (1.00-1.99 range) AND machine type register (MAC80/100/105/150)
   - Both registers must return valid values for positive firmware identification
   - Prevents false positives from random Modbus noise or ambiguous responses
-  - Hardware model validation ensures device is actually a Parmair MAC80/100/105/150
+  - Hardware model validation ensures device is actually a Parmair MAC unit
 
 ### Technical
 - Refactored `_detect_device_info()` in config_flow.py with consensus-based detection
