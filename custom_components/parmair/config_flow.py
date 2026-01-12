@@ -97,87 +97,142 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
         # Initial delay after connection
         time.sleep(0.15)
         
-        # Software version register addresses for different firmware versions
-        # Firmware 1.xx uses address 1018, Firmware 2.xx uses address 1015
-        sw_addresses = [
-            (1015, "2.xx"),  # Try firmware 2.xx first (address 1015)
-            (1018, "1.xx"),  # Then try firmware 1.xx (address 1018)
+        # Two-register consensus detection for robust firmware identification
+        # Each firmware version has unique SOFTWARE_VERSION and VENT_MACHINE addresses
+        # Both registers must return valid values for positive identification
+        detection_sets = [
+            {
+                "firmware": "2.xx",
+                "sw_address": 1015,  # SOFTWARE_VERSION for firmware 2.xx
+                "vm_address": 1125,  # VENT_MACHINE for firmware 2.xx
+                "sw_range": (2.0, 2.99),
+                "vm_valid": [80, 100, 105, 150],  # Valid MAC models
+            },
+            {
+                "firmware": "1.xx",
+                "sw_address": 1018,  # SOFTWARE_VERSION for firmware 1.xx
+                "vm_address": 1244,  # VENT_MACHINE for firmware 1.xx
+                "sw_range": (1.0, 1.99),
+                "vm_valid": [80, 100, 105, 150],  # Valid MAC models
+            },
         ]
         
-        # Try both address sets to detect which firmware version
-        for sw_address, fw_label in sw_addresses:
+        def _read_register(address: int) -> int | None:
+            """Read a single register with pymodbus version compatibility."""
             try:
-                _LOGGER.debug("Trying software version detection with address %d (firmware %s)", sw_address, fw_label)
-                
                 try:
                     # Try modern pymodbus with keyword arguments
                     result = client.read_holding_registers(
-                        address=sw_address, count=1, slave=data[CONF_SLAVE_ID]
+                        address=address, count=1, slave=data[CONF_SLAVE_ID]
                     )
                 except TypeError:
                     try:
                         # Try with 'unit' instead of 'slave'
                         result = client.read_holding_registers(
-                            address=sw_address, count=1, unit=data[CONF_SLAVE_ID]
+                            address=address, count=1, unit=data[CONF_SLAVE_ID]
                         )
                     except TypeError:
                         # Try older versions with positional + keyword
                         try:
                             result = client.read_holding_registers(
-                                sw_address, 1, unit=data[CONF_SLAVE_ID]
+                                address, 1, unit=data[CONF_SLAVE_ID]
                             )
                         except TypeError:
                             try:
                                 result = client.read_holding_registers(
-                                    sw_address, 1, slave=data[CONF_SLAVE_ID]
+                                    address, 1, slave=data[CONF_SLAVE_ID]
                                 )
                             except TypeError:
                                 _set_legacy_unit(client, data[CONF_SLAVE_ID])
-                                result = client.read_holding_registers(
-                                    sw_address, 1
-                                )
+                                result = client.read_holding_registers(address, 1)
                 
                 # Check if read was successful
                 if result and not (hasattr(result, "isError") and result.isError()):
-                    # Extract and scale software version
+                    # Extract register value
                     if hasattr(result, "registers"):
-                        raw_sw = result.registers[0]
+                        return result.registers[0]
                     elif isinstance(result, (list, tuple)):
-                        raw_sw = result[0]
+                        return result[0]
                     else:
-                        raw_sw = result
-                    
-                    # Validate the reading is reasonable (not 0 or 65535/error values)
-                    if raw_sw > 0 and raw_sw < 10000:
-                        sw_version = raw_sw * 0.01  # Scale factor for software version
-                        
-                        # Determine version family
-                        if sw_version >= 2.0:
-                            detected_sw_version = SOFTWARE_VERSION_2
-                            detected_firmware_registers = "2.xx"
-                        elif sw_version >= 1.0:
-                            detected_sw_version = SOFTWARE_VERSION_1
-                            detected_firmware_registers = "1.xx"
-                        
-                        if detected_sw_version != SOFTWARE_VERSION_UNKNOWN:
-                            _LOGGER.info(
-                                "Auto-detected software version: %.2f from address %d (firmware %s)",
-                                sw_version,
-                                sw_address,
-                                fw_label,
-                            )
-                            break  # Success, exit address loop
-                    else:
-                        _LOGGER.debug("Address %d returned invalid value: %d", sw_address, raw_sw)
-                else:
-                    _LOGGER.debug("Address %d: Failed to read - invalid response", sw_address)
+                        return result
             except Exception as ex:
-                _LOGGER.debug("Address %d: Could not read software version: %s", sw_address, ex)
+                _LOGGER.debug("Failed to read register at address %d: %s", address, ex)
+            return None
+        
+        # Try each firmware detection set
+        for detection_set in detection_sets:
+            firmware = detection_set["firmware"]
+            sw_address = detection_set["sw_address"]
+            vm_address = detection_set["vm_address"]
+            sw_min, sw_max = detection_set["sw_range"]
+            vm_valid = detection_set["vm_valid"]
+            
+            _LOGGER.debug(
+                "Trying two-register consensus detection for firmware %s (SW:%d, VM:%d)",
+                firmware, sw_address, vm_address
+            )
+            
+            # Read both registers
+            raw_sw = _read_register(sw_address)
+            raw_vm = _read_register(vm_address)
+            
+            # Validate both registers
+            sw_valid = False
+            vm_match = False
+            
+            if raw_sw is not None and 0 < raw_sw < 10000:
+                sw_version = raw_sw * 0.01
+                if sw_min <= sw_version <= sw_max:
+                    sw_valid = True
+                    _LOGGER.debug(
+                        "Address %d returned valid version %.2f for firmware %s",
+                        sw_address, sw_version, firmware
+                    )
+                else:
+                    _LOGGER.debug(
+                        "Address %d version %.2f outside expected range %.2f-%.2f",
+                        sw_address, sw_version, sw_min, sw_max
+                    )
+            else:
+                _LOGGER.debug("Address %d returned invalid or no data", sw_address)
+            
+            if raw_vm is not None and raw_vm in vm_valid:
+                vm_match = True
+                _LOGGER.debug(
+                    "Address %d returned valid machine type %d (MAC%d)",
+                    vm_address, raw_vm, raw_vm
+                )
+            else:
+                _LOGGER.debug(
+                    "Address %d returned invalid machine type: %s (expected one of %s)",
+                    vm_address, raw_vm, vm_valid
+                )
+            
+            # Both registers must validate for consensus
+            if sw_valid and vm_match:
+                if firmware == "2.xx":
+                    detected_sw_version = SOFTWARE_VERSION_2
+                else:
+                    detected_sw_version = SOFTWARE_VERSION_1
+                
+                detected_firmware_registers = firmware
+                
+                _LOGGER.info(
+                    "Firmware %s confirmed by two-register consensus: "
+                    "SW version %.2f (addr %d) + Machine type MAC%d (addr %d)",
+                    firmware, sw_version, sw_address, raw_vm, vm_address
+                )
+                break  # Success, exit detection loop
+            else:
+                _LOGGER.debug(
+                    "Firmware %s consensus failed (SW valid: %s, VM valid: %s)",
+                    firmware, sw_valid, vm_match
+                )
         
         # If software version was not detected, default to 1.xx
         if detected_sw_version == SOFTWARE_VERSION_UNKNOWN:
             _LOGGER.warning(
-                "Could not auto-detect software version from any address, defaulting to firmware %s",
+                "Could not auto-detect software version via two-register consensus, defaulting to firmware %s",
                 SOFTWARE_VERSION_1,
             )
             detected_sw_version = SOFTWARE_VERSION_1
@@ -194,77 +249,36 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
         
         # Try to read heater type from the correct address
         for heater_address, fw_label in heater_addresses:
-            try:
-                _LOGGER.debug("Trying heater type detection with address %d (firmware %s)", heater_address, fw_label)
+            _LOGGER.debug("Trying heater type detection with address %d (firmware %s)", heater_address, fw_label)
+            
+            raw_heater = _read_register(heater_address)
+            
+            # Validate heater type (0=Water, 1=Electric, 2=None)
+            if raw_heater is not None and raw_heater in [0, 1, 2]:
+                detected_heater_type = int(raw_heater)
                 
-                try:
-                    # Try modern pymodbus with keyword arguments
-                    result = client.read_holding_registers(
-                        address=heater_address, count=1, slave=data[CONF_SLAVE_ID]
-                    )
-                except TypeError:
-                    try:
-                        # Try with 'unit' instead of 'slave'
-                        result = client.read_holding_registers(
-                            address=heater_address, count=1, unit=data[CONF_SLAVE_ID]
-                        )
-                    except TypeError:
-                        # Try older versions with positional + keyword
-                        try:
-                            result = client.read_holding_registers(
-                                heater_address, 1, unit=data[CONF_SLAVE_ID]
-                            )
-                        except TypeError:
-                            try:
-                                result = client.read_holding_registers(
-                                    heater_address, 1, slave=data[CONF_SLAVE_ID]
-                                )
-                            except TypeError:
-                                _set_legacy_unit(client, data[CONF_SLAVE_ID])
-                                result = client.read_holding_registers(
-                                    heater_address, 1
-                                )
+                heater_names = {
+                    HEATER_TYPE_NONE: "None",
+                    HEATER_TYPE_WATER: "Water",
+                    HEATER_TYPE_ELECTRIC: "Electric",
+                }
                 
-                # Check if read was successful
-                if result and not (hasattr(result, "isError") and result.isError()):
-                    # Extract heater type value
-                    if hasattr(result, "registers"):
-                        heater_type = result.registers[0]
-                    elif isinstance(result, (list, tuple)):
-                        heater_type = result[0]
-                    else:
-                        heater_type = result
-                    
-                    # Validate heater type (0=Water, 1=Electric, 2=None)
-                    if heater_type in [0, 1, 2]:
-                        detected_heater_type = int(heater_type)
-                        
-                        heater_names = {
-                            HEATER_TYPE_NONE: "None",
-                            HEATER_TYPE_WATER: "Water",
-                            HEATER_TYPE_ELECTRIC: "Electric",
-                        }
-                        
-                        _LOGGER.info(
-                            "Auto-detected heater type: %s (%s) from address %d (firmware %s)",
-                            detected_heater_type,
-                            heater_names.get(detected_heater_type, "Unknown"),
-                            heater_address,
-                            fw_label,
-                        )
-                        break  # Success, exit address loop
-                    else:
-                        _LOGGER.debug("Address %d returned invalid heater type: %d", heater_address, heater_type)
-                else:
-                    _LOGGER.debug("Address %d: Failed to read heater type - invalid response", heater_address)
-            except Exception as ex:
-                _LOGGER.debug("Address %d: Could not read heater type: %s", heater_address, ex)
+                _LOGGER.info(
+                    "Auto-detected heater type: %s (%s) from address %d (firmware %s)",
+                    detected_heater_type,
+                    heater_names.get(detected_heater_type, "Unknown"),
+                    heater_address,
+                    fw_label,
+                )
+                break  # Success, exit address loop
+            else:
+                _LOGGER.debug("Address %d returned invalid heater type: %s", heater_address, raw_heater)
         
         # Use defaults if detection failed
         if detected_heater_type == HEATER_TYPE_UNKNOWN:
             detected_heater_type = HEATER_TYPE_NONE
             _LOGGER.warning(
-                "Heater type detection failed after 3 attempts, defaulting to None (no heater)"
+                "Heater type detection failed, defaulting to None (no heater)"
             )
         
         return detected_sw_version, detected_heater_type
