@@ -1,4 +1,4 @@
-## 0.9.0.10 - Function Order Fix (2026-01-18)
+## 0.9.10 - Function Order Fix (2026-01-18)
 
 ### Fixed
 - Fixed NameError: _read_register called before definition in warm-up phase
