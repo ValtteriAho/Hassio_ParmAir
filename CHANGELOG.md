@@ -1,3 +1,17 @@
+## 0.9.0.3 - Detection Improvements (2026-01-17)
+
+### Changed
+- **Future-Proof Machine Type Detection**: Removed validation constraints on VENT_MACHINE register
+  - Now accepts any machine type value returned by the device
+  - Enables support for future Parmair MAC models without code changes
+  - Detection still validates register readability for reliability
+
+### Added
+- **Enhanced Installation Visibility**: Comprehensive logging during device auto-detection
+  - Shows detected firmware version, machine type, and heater configuration
+  - Helps troubleshoot setup issues with detailed debug information
+  - Final summary log displays all detected parameters
+
 ## 0.9.0.2 - Enhanced Detection Reliability (2026-01-12)
 
 ### Fixed

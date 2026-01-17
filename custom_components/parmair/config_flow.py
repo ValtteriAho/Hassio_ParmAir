@@ -93,27 +93,28 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
         detected_sw_version = SOFTWARE_VERSION_UNKNOWN
         detected_heater_type = HEATER_TYPE_UNKNOWN
         detected_firmware_registers = None  # Track which address set worked
+        detected_machine_type = None  # Track detected machine type value
+        
+        _LOGGER.info("Starting device auto-detection...")
         
         # Initial delay after connection
         time.sleep(0.15)
         
         # Two-register consensus detection for robust firmware identification
         # Each firmware version has unique SOFTWARE_VERSION and VENT_MACHINE addresses
-        # Both registers must return valid values for positive identification
+        # Both registers must be readable for positive identification
         detection_sets = [
             {
                 "firmware": "2.xx",
                 "sw_address": 1015,  # SOFTWARE_VERSION for firmware 2.xx
                 "vm_address": 1125,  # VENT_MACHINE for firmware 2.xx
                 "sw_range": (2.0, 2.99),
-                "vm_valid": [80, 100, 105, 150],  # Valid MAC models
             },
             {
                 "firmware": "1.xx",
                 "sw_address": 1018,  # SOFTWARE_VERSION for firmware 1.xx
                 "vm_address": 1244,  # VENT_MACHINE for firmware 1.xx
                 "sw_range": (1.0, 1.99),
-                "vm_valid": [80, 100, 105, 150],  # Valid MAC models
             },
         ]
         
@@ -165,7 +166,6 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
             sw_address = detection_set["sw_address"]
             vm_address = detection_set["vm_address"]
             sw_min, sw_max = detection_set["sw_range"]
-            vm_valid = detection_set["vm_valid"]
             
             _LOGGER.debug(
                 "Trying two-register consensus detection for firmware %s (SW:%d, VM:%d)",
@@ -178,7 +178,7 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
             
             # Validate both registers
             sw_valid = False
-            vm_match = False
+            vm_readable = False
             
             if raw_sw is not None and 0 < raw_sw < 10000:
                 sw_version = raw_sw * 0.01
@@ -196,37 +196,38 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
             else:
                 _LOGGER.debug("Address %d returned invalid or no data", sw_address)
             
-            if raw_vm is not None and raw_vm in vm_valid:
-                vm_match = True
+            if raw_vm is not None:
+                vm_readable = True
                 _LOGGER.debug(
-                    "Address %d returned valid machine type %d (MAC%d)",
-                    vm_address, raw_vm, raw_vm
+                    "Address %d returned machine type value %d",
+                    vm_address, raw_vm
                 )
             else:
                 _LOGGER.debug(
-                    "Address %d returned invalid machine type: %s (expected one of %s)",
-                    vm_address, raw_vm, vm_valid
+                    "Address %d returned no data",
+                    vm_address
                 )
             
-            # Both registers must validate for consensus
-            if sw_valid and vm_match:
+            # Both registers must be readable for consensus
+            if sw_valid and vm_readable:
                 if firmware == "2.xx":
                     detected_sw_version = SOFTWARE_VERSION_2
                 else:
                     detected_sw_version = SOFTWARE_VERSION_1
                 
                 detected_firmware_registers = firmware
+                detected_machine_type = raw_vm  # Store detected machine type
                 
                 _LOGGER.info(
                     "Firmware %s confirmed by two-register consensus: "
-                    "SW version %.2f (addr %d) + Machine type MAC%d (addr %d)",
+                    "SW version %.2f (addr %d) + Machine type %d (addr %d)",
                     firmware, sw_version, sw_address, raw_vm, vm_address
                 )
                 break  # Success, exit detection loop
             else:
                 _LOGGER.debug(
-                    "Firmware %s consensus failed (SW valid: %s, VM valid: %s)",
-                    firmware, sw_valid, vm_match
+                    "Firmware %s consensus failed (SW valid: %s, VM readable: %s)",
+                    firmware, sw_valid, vm_readable
                 )
         
         # If software version was not detected, default to 1.xx
@@ -280,6 +281,16 @@ async def validate_connection(hass: HomeAssistant, data: dict[str, Any]) -> dict
             _LOGGER.warning(
                 "Heater type detection failed, defaulting to None (no heater)"
             )
+        
+        # Log final detection summary
+        _LOGGER.info(
+            "=== Detection Complete === Firmware: %s | Machine Type: %s | Heater: %s",
+            detected_sw_version,
+            detected_machine_type if detected_machine_type is not None else "Unknown",
+            {HEATER_TYPE_NONE: "None", HEATER_TYPE_WATER: "Water", HEATER_TYPE_ELECTRIC: "Electric"}.get(
+                detected_heater_type, "Unknown"
+            ),
+        )
         
         return detected_sw_version, detected_heater_type
     
