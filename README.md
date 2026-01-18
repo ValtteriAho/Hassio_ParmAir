@@ -1,4 +1,4 @@
-# Parmair MAC - Home Assistant Integration v0.10.0
+# Parmair MAC - Home Assistant Integration v0.10.2
 
 ![Parmair MAC Logo](parmair_logo.jpg)
 
@@ -122,7 +122,8 @@ The hardware model (MAC80/MAC100/MAC150) and firmware version (1.x/2.x) are auto
 
 Optional sensors (if hardware is present):
 - **Humidity**: Indoor humidity level
-- **CO2**: Indoor CO2 concentration
+- **CO2 Indoor Air**: Indoor air CO2 concentration (firmware 1.x and 2.x)
+- **CO2 Exhaust Air**: Exhaust air CO2 concentration (firmware 2.x only)
 - Entity attributes include diagnostic information to aid troubleshooting
 
 Diagnostic sensors:
@@ -161,7 +162,20 @@ This integration follows Home Assistant's development guidelines and uses:
 ## Support
 
 For issues, feature requests, or questions, please open an issue on GitHub.
-10.0 (2026-01-18)
+
+## Changelog
+
+### 0.10.2 (2026-01-18)
+- **Exhaust CO2 Sensor**: Added exhaust air CO2 sensor for firmware v2.xx devices
+- **Complete Monitoring**: Firmware 2.xx users now get both indoor and exhaust CO2 measurements
+- **Backward Compatible**: Exhaust CO2 shows as unavailable on firmware 1.xx devices
+
+### 0.10.1 (2026-01-18)
+- **CRITICAL FIX**: Fixed heater type mapping for firmware v2.xx
+- **Reversed Values**: Corrected heater type detection where values were reversed between firmware versions
+- **Safety**: Ensures correct heater identification for all device configurations
+
+### 0.10.0 (2026-01-18)
 - **Code Cleanup**: Removed all legacy pymodbus compatibility code
 - **Simplified API**: Now uses only modern pymodbus 3.11.2+ API
 - **50% Less Complexity**: Cleaner, more maintainable codebase
