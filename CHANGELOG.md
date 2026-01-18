@@ -1,3 +1,15 @@
+## 0.10.4 - Firmware v1.xx Compatibility Fix (2026-01-18)
+
+### Fixed
+- **CRITICAL: Fixed firmware v1.xx devices failing to load** with "Register 'co2_exhaust' not defined" error
+- Exhaust CO2 sensor now only created for v2.xx firmware (register doesn't exist in v1.xx)
+- v1.xx devices will now load successfully without the exhaust CO2 sensor
+
+### Technical
+- Added conditional sensor creation based on register availability
+- Exhaust CO2 sensor (register 1026/QE05_M) only exists in firmware v2.xx
+- v1.xx firmware only has indoor CO2 sensor (register 1031/QE20_M)
+
 ## 0.10.3 - HACS Compatibility Fix (2026-01-18)
 
 ### Fixed

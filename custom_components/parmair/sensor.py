@@ -85,11 +85,18 @@ async def async_setup_entry(
         ParmairHumiditySensor(coordinator, entry, "humidity", "Humidity"),
         ParmairHumidity24hAvgSensor(coordinator, entry, "humidity_24h_avg", "Humidity 24h Average"),
         ParmairCO2Sensor(coordinator, entry, "co2", "CO2"),
-        ParmairCO2Sensor(coordinator, entry, "co2_exhaust", "CO2 Exhaust Air"),  # v2.xx only
         
         # Filter change date sensor
         ParmairFilterChangeDateSensor(coordinator, entry),
     ]
+    
+    # Add exhaust CO2 sensor only for v2.xx firmware (register only exists in v2.xx)
+    try:
+        coordinator.get_register_definition("co2_exhaust")
+        entities.append(ParmairCO2Sensor(coordinator, entry, "co2_exhaust", "CO2 Exhaust Air"))
+    except (KeyError, ValueError):
+        # Register doesn't exist in v1.xx firmware - skip this sensor
+        pass
     
     async_add_entities(entities)
 
