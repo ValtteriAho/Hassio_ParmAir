@@ -1,3 +1,13 @@
+## 0.10.3 - HACS Compatibility Fix (2026-01-18)
+
+### Fixed
+- Fixed HACS installation issue caused by JSON validation error in previous version
+- No functional changes - this is a compatibility release to ensure HACS can properly download the integration
+
+### Technical
+- Bumped version to force HACS cache refresh
+- Previous fix (removal of trailing comma in manifest.json) already committed in 0.10.2
+
 ## 0.10.2 - Add Exhaust Air CO2 Sensor for v2.xx (2026-01-18)
 
 ### Added
