@@ -1,3 +1,11 @@
+## 0.10.10 - Manifest Fix (2026-01-25)
+
+### Fixed
+- **Removed trailing comma from manifest.json**
+  - v0.10.9 had invalid JSON syntax preventing HACS installation
+  - Fixed "trailing comma is not allowed" error
+  - No functionality changes from v0.10.9
+
 ## 0.10.9 - Humidity Sensor Fix (2026-01-24)
 
 ### Fixed
