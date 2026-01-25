@@ -78,6 +78,7 @@ async def async_setup_entry(
         
         # Performance sensors
         ParmairPercentageSensor(coordinator, entry, "heat_recovery_efficiency", "Heat Recovery Efficiency"),
+        ParmairPercentageSensor(coordinator, entry, "lto_heat_recovery_control", "LTO Heat Recovery Control"),
         ParmairPercentageSensor(coordinator, entry, "supply_fan_speed", "Supply Fan Speed"),
         ParmairPercentageSensor(coordinator, entry, "exhaust_fan_speed", "Exhaust Fan Speed"),
         

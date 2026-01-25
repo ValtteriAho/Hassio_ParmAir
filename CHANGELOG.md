@@ -1,3 +1,13 @@
+## 0.10.13 - LTO Heat Recovery Sensor (2026-01-25)
+
+### Added
+- **LTO Heat Recovery Control sensor**
+  - New sensor showing current heat recovery control percentage (0-100%)
+  - Available on both v1.xx and v2.xx devices (register 1046 / FG50_Y)
+  - Provides visibility into system's heat recovery efficiency control
+  - Updates every 30 seconds with other sensors
+  - Useful for monitoring system performance and automation triggers
+
 ## 0.10.12 - Sensor Update Fix (2026-01-25)
 
 ### Fixed
