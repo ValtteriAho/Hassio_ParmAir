@@ -1,34 +1,4 @@
-## 0.10.15 - Modbus Parameter Name Fix (2026-01-27) [BROKEN - DO NOT USE]
-
-### Note
-- **This version is broken - use v0.10.13 instead**
-- Attempted to use `unit` parameter which is also not supported
-- pymodbus 3.x doesn't accept keyword arguments for unit ID
-- Must rely on setting client.slave attribute instead
-
-## 0.10.14 - Modbus Communication Fix (2026-01-27) [BROKEN - DO NOT USE]
-
-### Note
-- **This version is broken - use v0.10.13 instead**
-- Attempted to use `slave` parameter which doesn't exist in pymodbus 3.x
-- Caused "unexpected keyword argument 'slave'" errors
-
-### Fixed
-- **Fixed "request ask for id=1 but got id=0" Modbus error**
-  - Explicitly pass slave/unit parameter to all pymodbus 3.x API calls
-  - Previously relied on setting unit ID on client object, which wasn't always respected
-  - Now passes `slave=0` parameter directly to `read_holding_registers` and `write_register`
-  - Eliminates "Skipping" errors in logs from unit ID mismatches
-  - Affects both coordinator.py (data polling) and config_flow.py (setup/detection)
-
-### Technical Details
-- pymodbus 3.x requires explicit `slave` parameter in read/write calls
-- Setting `client.slave` attribute is not sufficient for all operations
-- Changed all `read_holding_registers()` calls to include `slave=self.slave_id`
-- Changed all `write_register()` calls to include `slave=self.slave_id`
-- Ensures consistent communication with Parmair devices (which use unit ID 0)
-
-## 0.10.13 - LTO Heat Recovery Sensor (2026-01-25)
+## 0.11.0 - LTO Heat Recovery Sensor (2026-01-27)
 
 ### Added
 - **LTO Heat Recovery Control sensor**
@@ -37,6 +7,10 @@
   - Provides visibility into system's heat recovery efficiency control
   - Updates every 30 seconds with other sensors
   - Useful for monitoring system performance and automation triggers
+
+### Note
+- Version jump from 0.10.12 to 0.11.0 due to v0.10.13-0.10.15 being broken releases
+- v0.10.13, v0.10.14, and v0.10.15 have been removed from releases
 
 ## 0.10.12 - Sensor Update Fix (2026-01-25)
 
